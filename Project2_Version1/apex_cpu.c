@@ -67,7 +67,30 @@ print_instruction(const CPU_Stage *stage)
             printf("%s,#%d ", stage->opcode_str, stage->imm);
             break;
         }
+        
+        /*Shweta  ::: Start : Added new instructions*/
+        case OPCODE_LDR:
+        {
+            printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->rs2);
+            break;
+        }
 
+        case OPCODE_STR:
+        {
+            printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rs3, stage->rs1,
+                   stage->rs2);
+            break;
+        }
+
+        case OPCODE_ADDL:
+        case OPCODE_SUBL:
+        {
+            printf("%s,R%d,R%d,#%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->imm);
+            break;
+        }
+        /*Shweta  ::: End :: Added new instructions*/
         case OPCODE_HALT:
         {
             printf("%s", stage->opcode_str);

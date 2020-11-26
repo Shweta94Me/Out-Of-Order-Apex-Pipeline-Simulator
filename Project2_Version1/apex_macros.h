@@ -16,7 +16,7 @@
 #define DATA_MEMORY_SIZE 4096
 
 /* Size of integer register file */
-#define REG_FILE_SIZE 16
+#define REG_FILE_SIZE 48  /*Shweta ::: Changed from 16 to 48*/
 
 /* Numeric OPCODE identifiers for instructions */
 #define OPCODE_ADD 0x0
@@ -32,6 +32,15 @@
 #define OPCODE_BZ 0xa
 #define OPCODE_BNZ 0xb
 #define OPCODE_HALT 0xc
+
+/*Shweta ::: New Intructions added*/
+#define OPCODE_LDR 0xd
+#define OPCODE_STR 0xe
+#define OPCODE_AND 0xf
+#define OPCODE_OR 0x11
+#define OPCODE_XOR 0x12
+#define OPCODE_ADDL 0x13
+#define OPCODE_SUBL 0x14
 
 /* Set this flag to 1 to enable debug messages */
 #define ENABLE_DEBUG_MESSAGES 1

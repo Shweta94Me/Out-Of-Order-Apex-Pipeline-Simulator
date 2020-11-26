@@ -104,6 +104,41 @@ set_opcode_str(const char *opcode_str)
         return OPCODE_BNZ;
     }
 
+    if (strcmp(opcode_str, "LDR") == 0)
+    {
+        return OPCODE_LDR;
+    }
+
+    if (strcmp(opcode_str, "STR") == 0)
+    {
+        return OPCODE_STR;
+    }
+
+    if (strcmp(opcode_str, "AND") == 0)
+        {
+            return OPCODE_AND;
+        }
+
+    if (strcmp(opcode_str, "OR") == 0)
+    {
+        return OPCODE_OR;
+    }
+
+    if (strcmp(opcode_str, "EX-OR") == 0)
+        {
+            return OPCODE_XOR;
+        }
+
+    if (strcmp(opcode_str, "ADDL") == 0)
+        {
+            return OPCODE_ADDL;
+        }
+
+    if (strcmp(opcode_str, "SUBL") == 0)
+        {
+            return OPCODE_SUBL;
+        }
+
     if (strcmp(opcode_str, "HALT") == 0)
     {
         return OPCODE_HALT;
