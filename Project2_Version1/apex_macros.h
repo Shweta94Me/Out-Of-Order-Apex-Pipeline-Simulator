@@ -37,10 +37,13 @@
 #define OPCODE_LDR 0xd
 #define OPCODE_STR 0xe
 #define OPCODE_AND 0xf
-#define OPCODE_OR 0x11
-#define OPCODE_XOR 0x12
-#define OPCODE_ADDL 0x13
-#define OPCODE_SUBL 0x14
+#define OPCODE_OR 0x10
+#define OPCODE_XOR 0x11
+#define OPCODE_ADDL 0x12
+#define OPCODE_SUBL 0x13
+#define OPCODE_CMP 0x14
+#define OPCODE_JUMP 0x15
+#define OPCODE_JAL 0x16
 
 /* Set this flag to 1 to enable debug messages */
 #define ENABLE_DEBUG_MESSAGES 1

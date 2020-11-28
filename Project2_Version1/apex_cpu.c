@@ -90,6 +90,27 @@ print_instruction(const CPU_Stage *stage)
                    stage->imm);
             break;
         }
+
+        case OPCODE_CMP:
+        {
+            printf("%s,R%d,R%d ", stage->opcode_str, stage->rs1, stage->rs2);
+            break;
+        }
+
+        case OPCODE_JUMP:
+        {
+            printf("%s,R%d,#%d ", stage->opcode_str, stage->rs1,
+                   stage->imm);
+            break;
+        }
+
+        case OPCODE_JAL:
+        {
+            printf("%s,R%d,R%d,#%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->imm);
+            break;
+        }
+
         /*Shweta  ::: End :: Added new instructions*/
         case OPCODE_HALT:
         {
@@ -264,6 +285,68 @@ APEX_execute(APEX_CPU *cpu)
                 break;
             }
 
+            case OPCODE_SUB:
+            {
+                cpu->execute.result_buffer
+                    = cpu->execute.rs1_value - cpu->execute.rs2_value;
+
+                /* Set the zero flag based on the result buffer */
+                if (cpu->execute.result_buffer == 0)
+                {
+                    cpu->zero_flag = TRUE;
+                } 
+                else 
+                {
+                    cpu->zero_flag = FALSE;
+                }
+                break;
+            }
+
+            case OPCODE_CMP:
+            {
+                if (cpu->execute.rs1_value == cpu->execute.rs2_value)
+                {
+                    cpu->zero_flag = TRUE;
+                }
+                else{
+                    cpu->zero_flag = FALSE;
+                }
+                break;
+            }
+
+            case OPCODE_JUMP:
+            {
+                /*Shweta ::: Calculate the new PC and send it to fetch unit*/
+                cpu->pc = cpu->execute.rs1_value + cpu->execute.imm;
+
+                cpu->fetch_from_next_cycle = TRUE;
+
+                /*Flush previous stages*/
+                cpu->decode.has_insn = FALSE;
+
+                /*Enable fetch stage to start fetching from new PC*/
+                cpu->fetch.has_insn = TRUE;
+
+                break;
+
+            }
+
+            case OPCODE_JAL:
+            {
+                cpu->execute.result_buffer = cpu->pc + 4;
+                cpu->execute.pc = cpu->execute.rs1_value + cpu->execute.imm;
+
+                /* Since we are using reverse callbacks for pipeline stages, 
+                 * this will prevent the new instruction from being fetched in the current cycle*/
+                cpu->fetch_from_next_cycle = TRUE;
+
+                /* Flush previous stages */
+                cpu->decode.has_insn = FALSE;
+
+                /* Make sure fetch stage is enabled to start fetching from new PC */
+                cpu->fetch.has_insn = TRUE;
+
+            }
             case OPCODE_LOAD:
             {
                 cpu->execute.memory_address
@@ -352,12 +435,20 @@ APEX_memory(APEX_CPU *cpu)
         switch (cpu->memory.opcode)
         {
             case OPCODE_ADD:
+            case OPCODE_SUB:
+            case OPCODE_ADDL:
+            case OPCODE_SUBL:
+            case OPCODE_MUL:
+            case OPCODE_AND:
+            case OPCODE_OR:
+            case OPCODE_XOR:
             {
                 /* No work for ADD */
                 break;
             }
 
             case OPCODE_LOAD:
+            case OPCODE_LDR:
             {
                 /* Read from data memory */
                 cpu->memory.result_buffer
@@ -391,12 +482,21 @@ APEX_writeback(APEX_CPU *cpu)
         switch (cpu->writeback.opcode)
         {
             case OPCODE_ADD:
+            case OPCODE_SUB:
+            case OPCODE_ADDL:
+            case OPCODE_SUBL:
+            case OPCODE_MUL:
+            case OPCODE_AND:
+            case OPCODE_OR:
+            case OPCODE_XOR:
+            case OPCODE_JAL:
             {
                 cpu->regs[cpu->writeback.rd] = cpu->writeback.result_buffer;
                 break;
             }
 
             case OPCODE_LOAD:
+            case OPCODE_LDR:
             {
                 cpu->regs[cpu->writeback.rd] = cpu->writeback.result_buffer;
                 break;
