@@ -138,6 +138,23 @@ set_opcode_str(const char *opcode_str)
         {
             return OPCODE_SUBL;
         }
+    
+    if (strcmp(opcode_str, "CMP") == 0)
+        {
+            return OPCODE_CMP;
+        }
+    
+    
+    if (strcmp(opcode_str, "JUMP") == 0)
+        {
+            return OPCODE_JUMP;
+        }
+
+    if (strcmp(opcode_str, "JAL") == 0)
+        {
+            return OPCODE_JAL;
+        }
+    
 
     if (strcmp(opcode_str, "HALT") == 0)
     {
