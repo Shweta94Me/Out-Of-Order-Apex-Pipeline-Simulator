@@ -67,7 +67,51 @@ print_instruction(const CPU_Stage *stage)
             printf("%s,#%d ", stage->opcode_str, stage->imm);
             break;
         }
+        
+        /*Shweta  ::: Start : Added new instructions*/
+        case OPCODE_LDR:
+        {
+            printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->rs2);
+            break;
+        }
 
+        case OPCODE_STR:
+        {
+            printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rs3, stage->rs1,
+                   stage->rs2);
+            break;
+        }
+
+        case OPCODE_ADDL:
+        case OPCODE_SUBL:
+        {
+            printf("%s,R%d,R%d,#%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->imm);
+            break;
+        }
+
+        case OPCODE_CMP:
+        {
+            printf("%s,R%d,R%d ", stage->opcode_str, stage->rs1, stage->rs2);
+            break;
+        }
+
+        case OPCODE_JUMP:
+        {
+            printf("%s,R%d,#%d ", stage->opcode_str, stage->rs1,
+                   stage->imm);
+            break;
+        }
+
+        case OPCODE_JAL:
+        {
+            printf("%s,R%d,R%d,#%d ", stage->opcode_str, stage->rd, stage->rs1,
+                   stage->imm);
+            break;
+        }
+
+        /*Shweta  ::: End :: Added new instructions*/
         case OPCODE_HALT:
         {
             printf("%s", stage->opcode_str);
@@ -201,7 +245,7 @@ APEX_decode(APEX_CPU *cpu)
         }
 
         /* Copy data from decode latch to execute latch*/
-        cpu->execute = cpu->decode;
+        cpu->ex_int_fu = cpu->decode;
         cpu->decode.has_insn = FALSE;
 
         if (ENABLE_DEBUG_MESSAGES)
@@ -217,20 +261,20 @@ APEX_decode(APEX_CPU *cpu)
  * Note: You are free to edit this function according to your implementation
  */
 static void
-APEX_execute(APEX_CPU *cpu)
+APEX_int_fu(APEX_CPU *cpu)
 {
-    if (cpu->execute.has_insn)
+    if (cpu->ex_int_fu.has_insn)
     {
         /* Execute logic based on instruction type */
-        switch (cpu->execute.opcode)
+        switch (cpu->ex_int_fu.opcode)
         {
             case OPCODE_ADD:
             {
-                cpu->execute.result_buffer
-                    = cpu->execute.rs1_value + cpu->execute.rs2_value;
+                cpu->ex_int_fu.result_buffer
+                    = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.rs2_value;
 
                 /* Set the zero flag based on the result buffer */
-                if (cpu->execute.result_buffer == 0)
+                if (cpu->ex_int_fu.result_buffer == 0)
                 {
                     cpu->zero_flag = TRUE;
                 } 
@@ -241,10 +285,72 @@ APEX_execute(APEX_CPU *cpu)
                 break;
             }
 
+            case OPCODE_SUB:
+            {
+                cpu->ex_int_fu.result_buffer
+                    = cpu->ex_int_fu.rs1_value - cpu->ex_int_fu.rs2_value;
+
+                /* Set the zero flag based on the result buffer */
+                if (cpu->ex_int_fu.result_buffer == 0)
+                {
+                    cpu->zero_flag = TRUE;
+                } 
+                else 
+                {
+                    cpu->zero_flag = FALSE;
+                }
+                break;
+            }
+
+            case OPCODE_CMP:
+            {
+                if (cpu->ex_int_fu.rs1_value == cpu->ex_int_fu.rs2_value)
+                {
+                    cpu->zero_flag = TRUE;
+                }
+                else{
+                    cpu->zero_flag = FALSE;
+                }
+                break;
+            }
+
+            case OPCODE_JUMP:
+            {
+                /*Shweta ::: Calculate the new PC and send it to fetch unit*/
+                cpu->pc = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.imm;
+
+                cpu->fetch_from_next_cycle = TRUE;
+
+                /*Flush previous stages*/
+                cpu->decode.has_insn = FALSE;
+
+                /*Enable fetch stage to start fetching from new PC*/
+                cpu->fetch.has_insn = TRUE;
+
+                break;
+
+            }
+
+            case OPCODE_JAL:
+            {
+                cpu->ex_int_fu.result_buffer = cpu->pc + 4;
+                cpu->ex_int_fu.pc = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.imm;
+
+                /* Since we are using reverse callbacks for pipeline stages, 
+                 * this will prevent the new instruction from being fetched in the current cycle*/
+                cpu->fetch_from_next_cycle = TRUE;
+
+                /* Flush previous stages */
+                cpu->decode.has_insn = FALSE;
+
+                /* Make sure fetch stage is enabled to start fetching from new PC */
+                cpu->fetch.has_insn = TRUE;
+
+            }
             case OPCODE_LOAD:
             {
-                cpu->execute.memory_address
-                    = cpu->execute.rs1_value + cpu->execute.imm;
+                cpu->ex_int_fu.memory_address
+                    = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.imm;
                 break;
             }
 
@@ -253,7 +359,7 @@ APEX_execute(APEX_CPU *cpu)
                 if (cpu->zero_flag == TRUE)
                 {
                     /* Calculate new PC, and send it to fetch unit */
-                    cpu->pc = cpu->execute.pc + cpu->execute.imm;
+                    cpu->pc = cpu->ex_int_fu.pc + cpu->ex_int_fu.imm;
                     
                     /* Since we are using reverse callbacks for pipeline stages, 
                      * this will prevent the new instruction from being fetched in the current cycle*/
@@ -273,7 +379,7 @@ APEX_execute(APEX_CPU *cpu)
                 if (cpu->zero_flag == FALSE)
                 {
                     /* Calculate new PC, and send it to fetch unit */
-                    cpu->pc = cpu->execute.pc + cpu->execute.imm;
+                    cpu->pc = cpu->ex_int_fu.pc + cpu->ex_int_fu.imm;
                     
                     /* Since we are using reverse callbacks for pipeline stages, 
                      * this will prevent the new instruction from being fetched in the current cycle*/
@@ -290,10 +396,10 @@ APEX_execute(APEX_CPU *cpu)
 
             case OPCODE_MOVC: 
             {
-                cpu->execute.result_buffer = cpu->execute.imm;
+                cpu->ex_int_fu.result_buffer = cpu->ex_int_fu.imm;
 
                 /* Set the zero flag based on the result buffer */
-                if (cpu->execute.result_buffer == 0)
+                if (cpu->ex_int_fu.result_buffer == 0)
                 {
                     cpu->zero_flag = TRUE;
                 } 
@@ -306,12 +412,41 @@ APEX_execute(APEX_CPU *cpu)
         }
 
         /* Copy data from execute latch to memory latch*/
-        cpu->memory = cpu->execute;
-        cpu->execute.has_insn = FALSE;
+        cpu->memory = cpu->ex_int_fu;
+        cpu->ex_int_fu.has_insn = FALSE;
 
         if (ENABLE_DEBUG_MESSAGES)
         {
-            print_stage_content("Execute", &cpu->execute);
+            print_stage_content("Execute", &cpu->ex_int_fu);
+        }
+    }
+}
+
+
+static void
+APEX_mul_fu(APEX_CPU *cpu)
+{
+    if (cpu->ex_mul_fu.has_insn)
+    {
+        /* Execute logic based on instruction type */
+        switch (cpu->ex_mul_fu.opcode)
+        {
+            case OPCODE_MUL:
+            {
+                cpu->ex_mul_fu.result_buffer
+                    = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
+
+                break;
+            }
+        }
+
+        /* Copy data from execute latch to memory latch*/
+        cpu->memory = cpu->ex_mul_fu;
+        cpu->ex_mul_fu.has_insn = FALSE;
+
+        if (ENABLE_DEBUG_MESSAGES)
+        {
+            print_stage_content("Execute", &cpu->ex_mul_fu);
         }
     }
 }
@@ -329,12 +464,20 @@ APEX_memory(APEX_CPU *cpu)
         switch (cpu->memory.opcode)
         {
             case OPCODE_ADD:
+            case OPCODE_SUB:
+            case OPCODE_ADDL:
+            case OPCODE_SUBL:
+            case OPCODE_MUL:
+            case OPCODE_AND:
+            case OPCODE_OR:
+            case OPCODE_XOR:
             {
                 /* No work for ADD */
                 break;
             }
 
             case OPCODE_LOAD:
+            case OPCODE_LDR:
             {
                 /* Read from data memory */
                 cpu->memory.result_buffer
@@ -368,12 +511,21 @@ APEX_writeback(APEX_CPU *cpu)
         switch (cpu->writeback.opcode)
         {
             case OPCODE_ADD:
+            case OPCODE_SUB:
+            case OPCODE_ADDL:
+            case OPCODE_SUBL:
+            case OPCODE_MUL:
+            case OPCODE_AND:
+            case OPCODE_OR:
+            case OPCODE_XOR:
+            case OPCODE_JAL:
             {
                 cpu->regs[cpu->writeback.rd] = cpu->writeback.result_buffer;
                 break;
             }
 
             case OPCODE_LOAD:
+            case OPCODE_LDR:
             {
                 cpu->regs[cpu->writeback.rd] = cpu->writeback.result_buffer;
                 break;
@@ -492,7 +644,7 @@ APEX_cpu_run(APEX_CPU *cpu)
         }
 
         APEX_memory(cpu);
-        APEX_execute(cpu);
+        APEX_int_fu(cpu);
         APEX_decode(cpu);
         APEX_fetch(cpu);
 
