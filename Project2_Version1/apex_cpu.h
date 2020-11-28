@@ -59,7 +59,8 @@ typedef struct APEX_CPU
     /* Pipeline stages */
     CPU_Stage fetch;
     CPU_Stage decode;
-    CPU_Stage execute;
+    CPU_Stage ex_int_fu;
+    CPU_Stage ex_mul_fu;
     CPU_Stage memory;
     CPU_Stage writeback;
 } APEX_CPU;
