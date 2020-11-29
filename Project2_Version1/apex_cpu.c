@@ -12,6 +12,8 @@
 
 #include "apex_cpu.h"
 #include "apex_macros.h"
+#include "issue_q.h"
+#include "utilities.h"
 
 /* Converts the PC(4000 series) into array index for code memory
  *
@@ -168,7 +170,7 @@ APEX_fetch(APEX_CPU *cpu)
 {
     APEX_Instruction *current_ins;
 
-    if (cpu->fetch.has_insn)
+    if (cpu->fetch.has_insn && !cpu->fetch.stalled)
     {
         /* This fetches new branch target instruction from next cycle */
         if (cpu->fetch_from_next_cycle == TRUE)
@@ -190,14 +192,38 @@ APEX_fetch(APEX_CPU *cpu)
         cpu->fetch.rd = current_ins->rd;
         cpu->fetch.rs1 = current_ins->rs1;
         cpu->fetch.rs2 = current_ins->rs2;
+        cpu->fetch.rs3 = current_ins->rs3;
         cpu->fetch.imm = current_ins->imm;
+
 
         /* Update PC for next instruction */
         cpu->pc += 4;
 
-        /* Copy data from fetch latch to decode latch*/
-        cpu->decode = cpu->fetch;
+        if(!cpu->decode.stalled){
+            /* Copy data from fetch latch to decode latch*/
+            cpu->decode = cpu->fetch;
+        }else{
+            cpu->fetch.stalled = 1;
+        }
+        
 
+        if (ENABLE_DEBUG_MESSAGES)
+        {
+            print_stage_content("Fetch", &cpu->fetch);
+        }
+
+        /* Stop fetching new instructions if HALT is fetched */
+        if (cpu->fetch.opcode == OPCODE_HALT)
+        {
+            cpu->fetch.has_insn = FALSE;
+        }
+    }else{
+        if(!cpu->decode.stalled){
+            cpu->fetch.stalled = 0;
+
+            /* Copy data from fetch latch to decode latch*/
+            cpu->decode = cpu->fetch;
+        }
         if (ENABLE_DEBUG_MESSAGES)
         {
             print_stage_content("Fetch", &cpu->fetch);
@@ -211,6 +237,29 @@ APEX_fetch(APEX_CPU *cpu)
     }
 }
 
+/*Make instruction entry to Issue Queue*/
+void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
+{
+    cpu->decode.stalled = 0;
+    if(fu_type == Int_FU){
+        int phy_reg_dest = allocate_phy_dest_RAT(cpu->URF, cpu->RAT, cpu->decode.rd);
+        if (phy_reg_dest != -1){
+            cpu->decode.rd_phy_res = phy_reg_dest;
+
+            if(cpu->decode.opcode_str == "ADD"){
+                cpu->decode.rs1_ready = renameSrc1_readSrc1(cpu->URF, cpu->RAT, cpu);
+                cpu->decode.rs2_ready = renameSrc2_readSrc2(cpu->URF, cpu->RAT, cpu);
+
+                enQueue(cpu->iq, cpu);
+            }
+            
+        }
+        else{
+            //No physical register available in URF
+            cpu->decode.stalled = 1; 
+        }
+    }
+}
 /*
  * Decode Stage of APEX Pipeline
  *
@@ -219,15 +268,14 @@ APEX_fetch(APEX_CPU *cpu)
 static void
 APEX_decode(APEX_CPU *cpu)
 {
-    if (cpu->decode.has_insn)
+    if (cpu->decode.has_insn && !isQueueFull)
     {
         /* Read operands from register file based on the instruction type */
         switch (cpu->decode.opcode)
         {
             case OPCODE_ADD:
             {
-                cpu->decode.rs1_value = cpu->regs[cpu->decode.rs1];
-                cpu->decode.rs2_value = cpu->regs[cpu->decode.rs2];
+                dispatch_instr_to_IQ(cpu, Int_FU);
                 break;
             }
 
@@ -252,9 +300,27 @@ APEX_decode(APEX_CPU *cpu)
         {
             print_stage_content("Decode/RF", &cpu->decode);
         }
+
+    }else{
+        cpu->decode.stalled = 1;
+        if (ENABLE_DEBUG_MESSAGES)
+        {
+            print_stage_content("Decode/RF", &cpu->decode);
+        }
     }
 }
 
+//Broadcasting mechanism also know as data forwarding
+/*Here we will broadcast destination register value for those instructions who are waiting in issue queue with same
+source regsiter as this destination register*/
+void broadcastData(APEX_CPU *cpu, enum FU fu_type)
+{
+    //1: Make entry in URF 
+    updateURF(cpu, fu_type);
+
+    //2: updated IQ entries which has same source regsiters as this destination
+    updateIQ(cpu, fu_type);
+}
 /*
  * Execute Stage of APEX Pipeline
  *
@@ -272,6 +338,8 @@ APEX_int_fu(APEX_CPU *cpu)
             {
                 cpu->ex_int_fu.result_buffer
                     = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.rs2_value;
+
+                broadcastData(cpu, Int_FU);
 
                 /* Set the zero flag based on the result buffer */
                 if (cpu->ex_int_fu.result_buffer == 0)
@@ -592,6 +660,28 @@ APEX_cpu_init(const char *filename)
     {
         free(cpu);
         return NULL;
+    }
+
+    // Initialize Issue Queue
+    cpu->iq = createQueue();
+
+    // Initiliaze URF
+    for (int i =0 ; i < URFMaxSize; i++){
+        cpu->URF[i].free = 0;
+        cpu->URF[i].status = 1;
+        cpu->URF[i].value = 0;
+    }
+
+    // Initialize RAT
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+        cpu->RAT[i].phy_reg_num = -1;
+    }
+
+    // Initialize RRAT
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+        cpu->RRAT[i].phy_reg_after_comit = -1;
     }
 
     if (ENABLE_DEBUG_MESSAGES)
