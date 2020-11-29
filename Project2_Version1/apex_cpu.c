@@ -734,7 +734,12 @@ APEX_cpu_run(APEX_CPU *cpu)
         }
 
         APEX_memory(cpu);
-        APEX_int_fu(cpu);
+        if(cpu->ex_int_fu.has_insn){
+            APEX_int_fu(cpu);
+        }
+        if(cpu->ex_mul_fu.has_insn){
+            APEX_mul_fu(cpu);
+        }
         APEX_decode(cpu);
         APEX_fetch(cpu);
 
