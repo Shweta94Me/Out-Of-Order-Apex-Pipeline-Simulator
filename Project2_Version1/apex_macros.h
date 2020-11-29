@@ -36,9 +36,6 @@
 /*Shweta ::: New Intructions added*/
 #define OPCODE_LDR 0xd
 #define OPCODE_STR 0xe
-#define OPCODE_AND 0xf
-#define OPCODE_OR 0x10
-#define OPCODE_XOR 0x11
 #define OPCODE_ADDL 0x12
 #define OPCODE_SUBL 0x13
 #define OPCODE_CMP 0x14

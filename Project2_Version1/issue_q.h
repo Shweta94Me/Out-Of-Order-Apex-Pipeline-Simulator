@@ -9,7 +9,8 @@ Siddhesh ::: Structure code for Issue Queue
 
 enum FU{
     Int_FU,
-    Mul_FU
+    Mul_FU,
+    Mem_FU
 };
 
 typedef struct node_attr{

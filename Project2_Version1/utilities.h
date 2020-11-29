@@ -7,6 +7,7 @@ Shweta ::: Structure for URF, RAT, R-RAT
 #define URFMaxSize 48
 #define RATMaxSize 16
 #define RRATMaxSize 16
+#include "apex_cpu.h"
 
 /*Unified Register File*/
 typedef struct URF{

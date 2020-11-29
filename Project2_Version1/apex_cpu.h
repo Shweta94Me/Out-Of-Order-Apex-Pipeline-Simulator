@@ -91,6 +91,8 @@ typedef struct APEX_CPU
     int int_fu_free;               //flag for int fu availability 0 is free 1 is occupied
     int mul_fu_free;               //flag for mul fu availability 0 is free 1 is occupied
 
+    int mul_cycles;  //Mul unit takes 3 cycles to complete instruction
+
     Queue *iq;
     URF URF[URFMaxSize];
     RAT RAT[RATMaxSize];
@@ -101,7 +103,10 @@ typedef struct APEX_CPU
     CPU_Stage decode;
     CPU_Stage ex_int_fu;
     CPU_Stage ex_mul_fu;
-    CPU_Stage memory;
+    //Shweta ::: Why two mem stages added ::: memory stage is pipelined into two
+    CPU_Stage mem1; 
+    CPU_Stage mem2;
+
     CPU_Stage writeback;
 } APEX_CPU;
 
