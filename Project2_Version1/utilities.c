@@ -31,7 +31,7 @@ int allocate_phy_dest_RAT(URF *URF, RAT *RAT, int rd)
         RAT[rd].phy_reg_num = phy_reg; 
         //Mark free and status bit in URF 
         URF[phy_reg].free = 1; //Allocated
-        URF[phy_reg].status = 0; //Invalid as there is an instruction which is updated this destination register
+        URF[phy_reg].status = 0; //Invalid as there is an instruction which is updating this destination register
         return phy_reg;
     }
 
