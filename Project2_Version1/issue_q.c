@@ -185,6 +185,9 @@ void issueInstruction(APEX_CPU *cpu){
 
 	struct node* temp = cpu->iq->front;
 
+	int int_fu_flag = 0; // using this flag to know if we sent any instruction in int fu
+	int mul_fu_flag = 0; // using thus flag to know if we sent any instruction in mul fu
+
 	while (temp){
 
 		/* suppose we have mul instruction at front of the q and mul fu is free then we issue mul instruction to the mul fu
@@ -220,6 +223,9 @@ void issueInstruction(APEX_CPU *cpu){
 			
 			//deleting this node from the q 
 			deQueueAnyNode(cpu->iq, temp->data.pc);
+
+			//setting flag to 1
+			int_fu_flag = 1;
 		}
 
 
@@ -250,9 +256,21 @@ void issueInstruction(APEX_CPU *cpu){
 
 			//deleting this node from the q  
 			deQueueAnyNode(cpu->iq, temp->data.pc);
+
+			//setting flag to 1
+			mul_fu_flag = 1
 		}
 
 		temp = temp->next;
+	}
+
+	//using the above flag to ensure has instruction is made 0 if data is not pushed from iq to fu
+	//this help us in apex_cpu.c to decide if we need to run int fu or mul fu or ... unit
+	if(!int_fu_flag){
+		cpu->ex_int_fu.has_insn = 0;
+	}
+	if(!mul_fu_flag){
+		cpu->ex_mul_fu.has_insn = 0;
 	}
 
 	free(temp);
