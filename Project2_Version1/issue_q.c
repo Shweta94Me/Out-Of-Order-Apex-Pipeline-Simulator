@@ -7,8 +7,9 @@ Siddhesh ::: Implementation for Issue Queue
 #include <stdlib.h>
 #include <stdbool.h>
 #include "issue_q.h"
+#include "apex_cpu.h"
 
-struct node* newNode(int data)
+struct node* newNode(node_attr data)
 {
 	struct node* temp = (struct node*)malloc(sizeof(struct node));
 	temp->data = data;
@@ -25,7 +26,7 @@ struct Queue* createQueue()
 }
 
 
-bool isFull(struct Queue* q)
+bool isQueueFull(struct Queue* q)
 {
 	if (q->sizeOfQueue < maxIQSize)
 	{
@@ -34,7 +35,7 @@ bool isFull(struct Queue* q)
 	return true;
 }
 
-bool isEmpty(struct Queue* q)
+bool isQueueEmpty(struct Queue* q)
 {
 	if (q->front == NULL)
 	{
@@ -43,9 +44,12 @@ bool isEmpty(struct Queue* q)
 	return false;
 }
 
-void enQueue(struct Queue* q, int data)
+void enQueue(struct Queue* q, APEX_CPU *cpu)
 {
 	if(!isFull(q)){
+
+		struct node_attr data = createData(cpu);
+
 		struct node* temp = newNode(data);
 
 		if (q->rear == NULL)
@@ -59,7 +63,9 @@ void enQueue(struct Queue* q, int data)
 	}
 	else{
 		printf("Queue is Full");
+		// return 0;
 	}
+	// return 1;
 }
 
 
@@ -68,7 +74,7 @@ void deQueueAnyNode(struct Queue* q,int val){
 	{
 		struct node* temp = q->front, *prev;
 
-		if(temp->data == val){
+		if(temp->data.val == val){
 			q->front = q->front->next;
 			if (q->front == NULL)
 			{
@@ -79,7 +85,7 @@ void deQueueAnyNode(struct Queue* q,int val){
 			return;
 		}
 		
-		while (temp != NULL && temp->data != val)
+		while (temp != NULL && temp->data.val != val)
 		{
 			prev = temp;
 			temp = temp->next;
@@ -110,22 +116,56 @@ void printQueue(struct Queue* q)
 	printf("\n");
 }
 
-int main()
-{
-	struct Queue* q = createQueue();
+node_attr createData(APEX_CPU *cpu){
+    struct node_attr data;
+    data.pc = cpu->decode.pc;
+	strcpy(data.opcode_str, cpu->decode.opcode_str);
 
-	enQueue(q, 1);
-	enQueue(q, 2);
-	enQueue(q, 3);
-	printQueue(q);
-	deQueueAnyNode(q, 2);
-	deQueueAnyNode(q, 1);
-	printQueue(q);
-	deQueueAnyNode(q, 3);
-	enQueue(q, 4);
-	printf("Queue Front: %d \n", q->front->data);
-	printf("Queue Rear : %d", q->rear->data);
-	return 0;
+	data.rs1_tag = cpu->decode.rs1_phy_res;
+	data.rs1_ready = cpu->decode.rs1_ready;
+	data.rs1_value = cpu->decode.rs1_value;
+
+	data.rs2_tag =cpu->decode.rs2_phy_res;
+	data.rs2_ready = cpu->decode.rs2_ready;
+	data.rs2_value = cpu->decode.rs2_value;
+
+	data.rs3_tag =cpu->decode.rs3_phy_res;
+	data.rs3_ready = cpu->decode.rs3_ready;
+	data.rs3_value = cpu->decode.rs3_value;
+
+	data.FU_Type = cpu->decode.fu_type;
+
+	data.imm = cpu->decode.imm;
+	data.status = 1;
+
+	data.phy_rd = cpu->decode.rd_phy_res;
+
+    return data;
+}
+
+void updateIQ(APEX_CPU *cpu, enum FU fu_type)
+{
+	struct node* temp = cpu->iq->front;
+
+	while (temp){
+		if(fu_type == Int_FU){
+			if(temp->data.rs1_tag == cpu->ex_int_fu.rd_phy_res){
+				temp->data.rs1_value = cpu->ex_int_fu.result_buffer;
+				temp->data.rs1_ready = 1;
+			}
+			if(temp->data.rs2_tag == cpu->ex_int_fu.rd_phy_res){
+				temp->data.rs2_value = cpu->ex_int_fu.result_buffer;
+				temp->data.rs2_ready = 1;
+			}
+			if(temp->data.rs3_tag == cpu->ex_int_fu.rd_phy_res){
+				temp->data.rs3_value = cpu->ex_int_fu.result_buffer;
+				temp->data.rs3_ready = 1;
+			}
+		}
+
+		temp = temp->next;
+	}
+	
 }
 
 

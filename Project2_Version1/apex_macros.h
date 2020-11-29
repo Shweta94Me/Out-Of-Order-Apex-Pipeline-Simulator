@@ -51,4 +51,7 @@
 /* Set this flag to 1 to enable cycle single-step mode */
 #define ENABLE_SINGLE_STEP 1
 
+
+/*Define size of IQ, ROB, URF, RAT, R-RAT*/
+
 #endif
