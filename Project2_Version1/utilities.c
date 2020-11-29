@@ -31,7 +31,7 @@ int allocate_phy_dest_RAT(URF *URF, RAT *RAT, int rd)
         RAT[rd].phy_reg_num = phy_reg; 
         //Mark free and status bit in URF 
         URF[phy_reg].free = 1; //Allocated
-        URF[phy_reg].status = 0; //Invalid as there is an instruction which is updated this destination register
+        URF[phy_reg].status = 0; //Invalid as there is an instruction which is updating this destination register
         return phy_reg;
     }
 
@@ -80,6 +80,16 @@ void updateURF(APEX_CPU *cpu, enum FU fu_type)
     {
         cpu->URF[cpu->ex_int_fu.rd_phy_res].value = cpu->ex_int_fu.result_buffer;
         cpu->URF[cpu->ex_int_fu.rd_phy_res].status = 1;
+    }
+    else if(fu_type == Mul_FU)
+    {
+        cpu->URF[cpu->ex_mul_fu.rd_phy_res].value = cpu->ex_mul_fu.result_buffer;
+        cpu->URF[cpu->ex_mul_fu.rd_phy_res].status = 1;
+    }
+    else if(fu_type == Mem_FU)
+    {
+        cpu->URF[cpu->mem2.rd_phy_res].value = cpu->mem2.result_buffer;
+        cpu->URF[cpu->mem2.rd_phy_res].status = 1;
     }
 }
 
