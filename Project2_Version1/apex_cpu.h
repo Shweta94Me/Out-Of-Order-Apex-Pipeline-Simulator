@@ -87,6 +87,10 @@ typedef struct APEX_CPU
     int single_step;               /* Wait for user input after every cycle */
     int zero_flag;                 /* {TRUE, FALSE} Used by BZ and BNZ to branch */
     int fetch_from_next_cycle;
+
+    int int_fu_free;               //flag for int fu availability 0 is free 1 is occupied
+    int mul_fu_free;               //flag for mul fu availability 0 is free 1 is occupied
+
     Queue *iq;
     URF URF[URFMaxSize];
     RAT RAT[RATMaxSize];
