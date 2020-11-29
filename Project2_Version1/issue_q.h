@@ -12,8 +12,8 @@ enum FU{
     Mul_FU
 };
 
-typedef struct node {
-    int data;
+typedef struct node_attr{
+    int val;
     int pc;
     char opcode_str[128];
     enum FU FU_Type;
@@ -22,20 +22,26 @@ typedef struct node {
     
     // src 1 fields
     int rs1_ready; 
-    int rs1; //rs1 tag
     int rs1_value; 
-    int arc_rs1; 
+    int rs1_tag; //src1 tag : store physical register address 
     
     // src 2 fields
     int rs2_ready;
-    int rs2; //rs2 tag
     int rs2_value;
-    int arc_rs2;
+    int rs2_tag; //src2 tag : store physical register address 
+
+    // src 2 fields
+    int rs3_ready;
+    int rs3_value;
+    int rs3_tag;  //src3 tag : store physical register address 
 
     // destination
-    int rd;
-    int arc_rd;
+    int phy_rd; //Destination physical register
 
+}node_attr;
+
+typedef struct node {
+    node_attr data;
     struct node *next;
 }node;
 
@@ -48,8 +54,8 @@ typedef struct Queue
 }Queue;
 
 struct Queue* createQueue();
-bool isFull(struct Queue* q);
-bool isEmpty(struct Queue* q);
+bool isQueueFull(struct Queue* q);
+bool isQueueEmpty(struct Queue* q);
 void printQueue(struct Queue* q);
 void enQueue(struct Queue* q, int data);
 void deQueueAnyNode(struct Queue* q,int val);

@@ -26,7 +26,10 @@ typedef struct RRAT{
 }RRAT;
 
 
-struct URF URF[URFMaxSize];
-struct RAT RAT[RATMaxSize];
-struct RRAT RRAT[RRATMaxSize];
+int traverseURF(URF *URF);
+int allocate_phy_dest_RAT(URF *URF, RAT *RAT, int rd);
+int renameSrc1_readSrc1(URF *URF, RAT *RAT, APEX_CPU *cpu);
+int renameSrc2_readSrc2(URF *URF, RAT *RAT, APEX_CPU *cpu);
+int renameSrc3_readSrc3(URF *URF, RAT *RAT, APEX_CPU *cpu);
+void updateURF(APEX_CPU *cpu, enum FU fu_type);
 
