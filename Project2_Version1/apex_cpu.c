@@ -240,7 +240,7 @@ APEX_fetch(APEX_CPU *cpu)
 /*Make instruction entry to Issue Queue*/
 void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 {
-    cpu->decode.stalled = 0;
+    cpu->decode.stalled = 0; //Set decode to unstalled
     if(fu_type == Int_FU){
 
         int phy_reg_dest = 0;
@@ -364,7 +364,7 @@ APEX_decode(APEX_CPU *cpu)
 
                 if(!cpu->decode.stalled){
                     /* Copy data from decode latch to execute latch*/
-                    cpu->ex_int_fu = cpu->decode;
+                    // cpu->ex_int_fu = cpu->decode;
                     cpu->decode.has_insn = FALSE;
                 }
                 break;
@@ -379,7 +379,7 @@ APEX_decode(APEX_CPU *cpu)
 
                 if(!cpu->decode.stalled){
                     /* Copy data from decode latch to execute latch*/
-                    cpu->mem1 = cpu->decode;
+                    // cpu->mem1 = cpu->decode;
                     cpu->decode.has_insn = FALSE;
                 }
                 break;
@@ -391,7 +391,7 @@ APEX_decode(APEX_CPU *cpu)
 
                 if(!cpu->decode.stalled){
                     /* Copy data from decode latch to execute latch*/
-                    cpu->ex_mul_fu = cpu->decode;
+                    // cpu->ex_mul_fu = cpu->decode;
                     cpu->decode.has_insn = FALSE;
                 }
                 break;
@@ -401,17 +401,11 @@ APEX_decode(APEX_CPU *cpu)
             {
                 dispatch_instr_to_IQ(cpu, Int_FU);
                 /* Copy data from decode latch to execute latch*/
-                cpu->ex_int_fu = cpu->decode;
+                // cpu->ex_int_fu = cpu->decode;
                 cpu->decode.has_insn = FALSE;
                 break;
             }
         }
-
-        // if(!cpu->decode.stalled){
-        //     /* Copy data from decode latch to execute latch*/
-        //     cpu->ex_int_fu = cpu->decode;
-        //     cpu->decode.has_insn = FALSE;
-        // }
 
         if (ENABLE_DEBUG_MESSAGES)
         {
@@ -665,8 +659,10 @@ APEX_int_fu(APEX_CPU *cpu)
 static void
 APEX_mul_fu(APEX_CPU *cpu)
 {
-    //Entering mul unit for the first time
-    if (cpu->ex_mul_fu.has_insn && cpu->mul_cycles == 0)
+    //Entering mul unit for the first time 
+    /*Shweta ::: We need to wait for three cycles in MUL and mul_cycles initialized with zero hence checking 
+    against 2 when entering in MUL_FU for third cycle*/
+    if (cpu->ex_mul_fu.has_insn && cpu->mul_cycles == 2)
     {
         /* Execute logic based on instruction type */
         switch (cpu->ex_mul_fu.opcode)
@@ -676,11 +672,16 @@ APEX_mul_fu(APEX_CPU *cpu)
                 cpu->ex_mul_fu.result_buffer
                     = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
                 
-                cpu->mul_cycles += 1;
-                cpu->mul_fu_free = 1;
+                cpu->mul_cycles = 0; //Reset
+                cpu->mul_fu_free = 0; //free mul unit
+
+                broadcastData(cpu, Mul_FU); // only when completed 3 cycles
+
+                /* Copy data from execute latch to memory latch*/
+                // cpu->memory = cpu->ex_mul_fu; //Shweta ::: Instead of passing it to memory update ROB entry
+                cpu->ex_mul_fu.has_insn = FALSE;
                 break;
             }
-
         }
 
         if (ENABLE_DEBUG_MESSAGES)
@@ -690,18 +691,6 @@ APEX_mul_fu(APEX_CPU *cpu)
     }
     else{
         cpu->mul_cycles += 1;
-
-        if (cpu->mul_cycles == 3){
-
-            cpu->mul_cycles = 0; //Reset
-            cpu->mul_fu_free = 0; //free mul unit
-
-            broadcastData(cpu, Mul_FU); // only when completed 3 cycles
-
-            /* Copy data from execute latch to memory latch*/
-            // cpu->memory = cpu->ex_mul_fu; //Shweta ::: Instead of passing it to memory update ROB entry
-            cpu->ex_mul_fu.has_insn = FALSE;
-        }
 
         if (ENABLE_DEBUG_MESSAGES)
         {
@@ -943,13 +932,15 @@ APEX_cpu_run(APEX_CPU *cpu)
             break;
         }
 
-        APEX_memory(cpu);
+        APEX_memory2(cpu);
+        APEX_memory1(cpu);
         if(cpu->ex_int_fu.has_insn){
             APEX_int_fu(cpu);
         }
         if(cpu->ex_mul_fu.has_insn){
             APEX_mul_fu(cpu);
         }
+        issueInstruction(cpu);
         APEX_decode(cpu);
         APEX_fetch(cpu);
 
