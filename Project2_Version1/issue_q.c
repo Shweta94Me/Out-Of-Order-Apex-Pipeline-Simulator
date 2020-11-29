@@ -166,7 +166,36 @@ void updateIQ(APEX_CPU *cpu, enum FU fu_type)
 				temp->data.rs3_ready = 1;
 			}
 		}
-
+		else if (fu_type == Mul_FU)
+		{
+			if(temp->data.rs1_tag == cpu->ex_mul_fu.rd_phy_res){
+				temp->data.rs1_value = cpu->ex_mul_fu.result_buffer;
+				temp->data.rs1_ready = 1;
+			}
+			if(temp->data.rs2_tag == cpu->ex_mul_fu.rd_phy_res){
+				temp->data.rs2_value = cpu->ex_mul_fu.result_buffer;
+				temp->data.rs2_ready = 1;
+			}
+			if(temp->data.rs3_tag == cpu->ex_mul_fu.rd_phy_res){
+				temp->data.rs3_value = cpu->ex_mul_fu.result_buffer;
+				temp->data.rs3_ready = 1;
+			}
+		}
+		else if (fu_type == Mem_FU)
+		{
+			if(temp->data.rs1_tag == cpu->mem2.rd_phy_res){
+				temp->data.rs1_value = cpu->mem2.result_buffer;
+				temp->data.rs1_ready = 1;
+			}
+			if(temp->data.rs2_tag == cpu->mem2.rd_phy_res){
+				temp->data.rs2_value = cpu->mem2.result_buffer;
+				temp->data.rs2_ready = 1;
+			}
+			if(temp->data.rs3_tag == cpu->mem2.rd_phy_res){
+				temp->data.rs3_value = cpu->mem2.result_buffer;
+				temp->data.rs3_ready = 1;
+			}
+		}
 		temp = temp->next;
 	}
 

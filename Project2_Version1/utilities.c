@@ -81,6 +81,16 @@ void updateURF(APEX_CPU *cpu, enum FU fu_type)
         cpu->URF[cpu->ex_int_fu.rd_phy_res].value = cpu->ex_int_fu.result_buffer;
         cpu->URF[cpu->ex_int_fu.rd_phy_res].status = 1;
     }
+    else if(fu_type == Mul_FU)
+    {
+        cpu->URF[cpu->ex_mul_fu.rd_phy_res].value = cpu->ex_mul_fu.result_buffer;
+        cpu->URF[cpu->ex_mul_fu.rd_phy_res].status = 1;
+    }
+    else if(fu_type == Mem_FU)
+    {
+        cpu->URF[cpu->mem2.rd_phy_res].value = cpu->mem2.result_buffer;
+        cpu->URF[cpu->mem2.rd_phy_res].status = 1;
+    }
 }
 
 
