@@ -2,6 +2,9 @@
 Siddhesh ::: Structure code for Issue Queue 
 */
 
+#ifndef _ISSUE_Q_H_
+#define _ISSUE_Q_H_
+
 #include "apex_macros.h"
 #include <stdbool.h>
 
@@ -78,8 +81,7 @@ void enQueue(struct Queue* q, node_attr data);
 
 // delete the entry from q based on program counter
 void deQueueAnyNode(struct Queue* q,int val);
-
-
+#endif
 
 
 

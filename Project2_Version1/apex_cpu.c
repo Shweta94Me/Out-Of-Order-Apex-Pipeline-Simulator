@@ -645,7 +645,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 static void
 APEX_decode(APEX_CPU *cpu)
 {
-    if (cpu->decode.has_insn && !isQueueFull)
+    if (cpu->decode.has_insn && !isQueueFull(cpu->iq))
     {
         /* Read operands from register file based on the instruction type */
         switch (cpu->decode.opcode)
@@ -1216,12 +1216,12 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("--------------------------------------------\n");
         }
 
-        if (APEX_writeback(cpu))
-        {
-            /* Halt in writeback stage */
-            printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
-            break;
-        }
+        // if (APEX_writeback(cpu))
+        // {
+        //     /* Halt in writeback stage */
+        //     printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
+        //     break;
+        // }
 
         APEX_memory2(cpu);
         APEX_memory1(cpu);
