@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
-#include <rob.h>
+#include "rob.h"
 
 // function to create a queue
 // of given capacity.
@@ -11,13 +11,11 @@ void createROB()
     rob = (struct REORDER_BUFFER *)malloc(
         sizeof(struct REORDER_BUFFER));
 
-    rob->entry = (ROB_entry *)malloc(sizeof(ROB_entry) * ROB_ENTRY_SIZE);
-
-    rob->head = -1;
-    rob->tail = 0;
+    rob->head = NULL;
+    rob->tail = NULL;
     rob->size = 0;
 
-    return rob
+    return;
 }
 
 // Queue is full when size becomes
@@ -33,9 +31,9 @@ int ROB_is_empty()
     return (rob->size == 0);
 }
 
-char instruction_type(CPU_Stage *instruction)
+char instruction_type(int opcode)
 {
-    switch (instruction->opcode_str)
+    switch (opcode)
     {
     case OPCODE_STORE:
     case OPCODE_LOAD:
@@ -43,49 +41,74 @@ char instruction_type(CPU_Stage *instruction)
     case OPCODE_STR:
         return 'm';
     default:
-    {
         return 'r';
     }
-    }
+}
+
+ROB_entry_node *ROB_create_entry(CPU_Stage stage)
+{
+    ROB_entry_node *node = (ROB_entry_node *)malloc(sizeof(ROB_entry_node));
+    ROB_entry entry = {
+        .ar_address = stage.rd,
+        .pc_value = stage.pc,
+        .inst_type = instruction_type(stage.opcode),
+        .result = 0,
+        .sval_valid = 0,
+        .status = 0,
+    };
+    node->entry = entry;
+    node->next = NULL;
+    return node;
 }
 
 // Function to add an item to the queue.
 // It changes rear and size
-void ROB_push(CPU_Stage *instruction)
+void ROB_push(CPU_Stage instruction)
 {
     if (ROB_is_full())
         return;
-    rob->entry[rob->tail].pc_value = instruction->pc;
-    rob->entry[rob->tail].ar_address = instruction->rd;
-    rob->entry[rob->tail].result = 0;
-    rob->entry[rob->tail].sval_valid = 0; //for store instruction
-    rob->entry[rob->tail].status = 0;     //marked as invalid
-    rob->entry[rob->tail].inst_type = instruction_type(instruction);
-    rob->tail++;
+    ROB_entry_node *node = ROB_create_entry(instruction);
+    if (!rob->tail)
+    {
+        rob->head = node;
+    }
+    else
+    {
+        rob->tail->next = node;
+    }
+    rob->tail = node;
     rob->size++;
+}
+
+void ROB_update_RF(ROB_entry entry)
+{
+    // TODO:
 }
 
 // Function to remove an item from queue.
 // It changes front and size
-ROB_entry ROB_pop()
+void ROB_pop()
 {
-    if (ROB_is_empty())
-        return NULL;
-    ROB_entry entry = rob->entry[rob->head];
-    rob->entry[rob->head].status = 1; //marked as valid
-    rob->head++;
+    if (ROB_is_empty() || !rob->head->entry.status)
+        return;
+    ROB_entry_node *node = rob->head;
+    ROB_update_RF(node->entry);
+    rob->head = rob->head->next;
+    free(node);
     rob->size--;
-    return entry;
 }
 
-void forward_to_rob(CPU_Stage *instruction)
+void forward_to_rob(CPU_Stage instruction)
 {
-    for (int i = 0; i < ROB_ENTRY_SIZE; i++)
+    ROB_entry_node *node = rob->head;
+    while (node)
     {
-        if (instruction->pc == rob->entry[i].pc_value)
+        if (instruction.pc == node->entry.pc_value)
         {
-            rob->entry[i].result = instruction->result_buffer;
-            rob->entry[i].status = 1;
+            node->entry.result = instruction.result_buffer;
+            node->entry.status = 1;
+            return;
         }
+        node = node->next;
     }
 }
