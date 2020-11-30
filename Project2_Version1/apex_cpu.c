@@ -627,7 +627,8 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             }
 
             //Pass all instructions to Issue Queue
-            enQueue(cpu->iq, cpu);
+            node_attr data = createData(cpu);
+            enQueue(cpu->iq, data);
         }
         else
         {
