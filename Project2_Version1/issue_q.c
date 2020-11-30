@@ -7,7 +7,6 @@ Siddhesh ::: Implementation for Issue Queue
 #include <stdlib.h>
 #include <stdbool.h>
 #include "issue_q.h"
-#include "apex_cpu.h"
 
 struct node* newNode(node_attr data)
 {
