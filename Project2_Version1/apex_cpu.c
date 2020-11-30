@@ -12,8 +12,6 @@
 
 #include "apex_cpu.h"
 #include "apex_macros.h"
-#include "issue_q.h"
-#include "utilities.h"
 
 /* Converts the PC(4000 series) into array index for code memory
  *
@@ -1314,6 +1312,9 @@ APEX_cpu_init(const char *filename)
     {
         cpu->rrat[i].phy_reg_after_comit = -1;
     }
+
+    //Initialize ROB
+    createROB();
 
     if (ENABLE_DEBUG_MESSAGES)
     {

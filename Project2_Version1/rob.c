@@ -54,7 +54,7 @@ ROB_entry_node *ROB_create_entry(CPU_Stage stage)
         .inst_type = instruction_type(stage.opcode),
         .result = 0,
         .sval_valid = 0,
-        .status = 0,
+        .status = 1,
     };
     node->entry = entry;
     node->next = NULL;
@@ -68,6 +68,18 @@ void ROB_push(CPU_Stage instruction)
     if (ROB_is_full())
         return;
     ROB_entry_node *node = ROB_create_entry(instruction);
+
+    // if(rob->head == NULL){
+    //     rob->head = node;
+    //     rob->size++;
+    // }else{
+    //     rob->tail->next = node;
+    //     rob->size++;
+    // }
+
+    // rob->tail = node;
+    // rob->tail->next = rob->head;
+
     if (!rob->tail)
     {
         rob->head = node;
@@ -78,21 +90,46 @@ void ROB_push(CPU_Stage instruction)
     }
     rob->tail = node;
     rob->size++;
+
 }
 
 void ROB_update_RF(ROB_entry entry)
 {
     // TODO:
+    
 }
 
 // Function to remove an item from queue.
 // It changes front and size
 void ROB_pop()
 {
-    if (ROB_is_empty() || !rob->head->entry.status)
+    if (ROB_is_empty() || !rob->head->entry.status){
+        //printf("reached here");
         return;
+    }
+        
+    
+    // ROB_entry temp;
+    // if(rob->head == rob->tail){
+    //     temp = rob->head->entry;
+    //     free(rob->head);
+    //     rob->head = NULL;
+    //     rob->tail = NULL;
+    //     rob->size--;
+    // }
+    // else{
+        
+    //     ROB_entry_node* node = rob->head;
+    //     temp = node->entry;
+    //     rob->head = rob->head->next;
+    //     rob->tail->next = rob->head;
+    //     free(node);
+    //     rob->size--;
+    // }
+
     ROB_entry_node *node = rob->head;
-    ROB_update_RF(node->entry);
+    // ROB_update_RF(node->entry);
+    printf("val -> %d \n", node->entry.pc_value);
     rob->head = rob->head->next;
     free(node);
     rob->size--;
@@ -112,3 +149,55 @@ void forward_to_rob(CPU_Stage instruction)
         node = node->next;
     }
 }
+
+// Unit test code for rob 
+int main(){
+
+    createROB();
+    CPU_Stage cpustage;
+
+    cpustage.pc = 1;
+    cpustage.opcode = OPCODE_ADD;
+    cpustage.rd = 1;
+
+
+    printf("size -> %d \n", rob->size);  // 0
+    ROB_push(cpustage);
+    cpustage.pc = 2;
+    ROB_push(cpustage);
+    cpustage.pc = 3;
+    ROB_push(cpustage);
+    cpustage.pc = 4;
+    ROB_push(cpustage);
+    cpustage.pc = 5;
+    ROB_push(cpustage);
+    cpustage.pc = 6;
+    ROB_push(cpustage);
+    cpustage.pc = 7;
+    ROB_push(cpustage);
+    cpustage.pc = 8;
+    ROB_push(cpustage);  // this is 8th
+
+    printf("size -> %d \n", rob->size); // 7
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();  // this is 8th pop()  
+
+    printf("size -> %d \n ", rob->size); // 0
+    cpustage.pc = 9;
+    ROB_push(cpustage);
+    ROB_pop();
+    ROB_pop();
+    printf("size -> %d \n", rob->size); // 1
+
+    return 0;
+
+
+}
+
+

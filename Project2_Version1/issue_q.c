@@ -5,6 +5,7 @@ Siddhesh ::: Implementation for Issue Queue
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "issue_q.h"
 
 struct node* newNode(node_attr data)
@@ -24,27 +25,27 @@ struct Queue* createQueue()
 }
 
 
-int isQueueFull(struct Queue* q)
+bool isQueueFull(struct Queue* q)
 {
 	if (q->sizeOfQueue < maxIQSize)
 	{
-		return 0;
+		return false;
 	}
-	return 1;
+	return true;
 }
 
-int isQueueEmpty(struct Queue* q)
+bool isQueueEmpty(struct Queue* q)
 {
 	if (q->front == NULL)
 	{
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 void enQueue(struct Queue* q, node_attr data)
 {
-	if(!isQueueFull(q)){
+	if(!isFull(q)){
 
 		// struct node_attr data = createData(cpu);
 
@@ -68,7 +69,7 @@ void enQueue(struct Queue* q, node_attr data)
 
 
 void deQueueAnyNode(struct Queue* q,int val){
-	if(!isQueueEmpty(q))
+	if(!isEmpty(q))
 	{
 		struct node* temp = q->front, *prev;
 
@@ -108,12 +109,11 @@ void printQueue(struct Queue* q)
 
 	while(temp)
 	{
-		printf("%d ->", temp->data.pc);
+		printf("%d ->", temp->data);
 		temp = temp->next;
 	}
 	printf("\n");
 }
-
 
 
 

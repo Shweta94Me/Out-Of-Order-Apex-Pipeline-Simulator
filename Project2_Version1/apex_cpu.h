@@ -12,7 +12,7 @@
 #include "apex_macros.h"
 #include "issue_q.h"
 #include "utilities.h"
-
+#include "rob.h"
 
 /* Format of an APEX instruction  */
 typedef struct APEX_Instruction
