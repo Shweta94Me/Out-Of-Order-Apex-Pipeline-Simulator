@@ -7,7 +7,7 @@ Shweta ::: Implementation of URF, RAT, R-RAT
 
 //Check if URF has a free entry and return that free entry index
 
-int traverseURF(struct URF* urf)
+int traverseURF(URF* urf)
 {
     for(int i = 0; i < URFMaxSize; i++)
     {
@@ -20,7 +20,7 @@ int traverseURF(struct URF* urf)
     return -1; //No free entry available
 }
 
-int allocate_phy_dest_RAT(struct URF* urf, struct RAT* rat, int rd)
+int allocate_phy_dest_RAT(URF* urf, RAT* rat, int rd)
 {
     //Check free entry in URF
     int phy_reg = traverseURF(urf);
@@ -37,19 +37,19 @@ int allocate_phy_dest_RAT(struct URF* urf, struct RAT* rat, int rd)
     return -1; // Can not allocate new physical register
 }
 
-int renameSrcWithPhyReg(struct RAT* rat, int rs){
+int renameSrcWithPhyReg(RAT* rat, int rs){
     int phy_reg = rat[rs].phy_reg_num; //Read physical register num from RAT
     return phy_reg;
 }
 
-int readSrcFromURF(struct URF* urf, int phy_reg){
+int readSrcFromURF(URF* urf, int phy_reg){
     if(urf[phy_reg].status){
         return urf[phy_reg].value;
     }
     return -1;
 }
 
-void updateURF(struct URF* urf, int result, int phy_res, enum FU fu_type){
+void updateURF(URF* urf, int result, int phy_res, enum FU fu_type){
 
     if(fu_type == Int_FU)
     {
