@@ -3,6 +3,7 @@ Siddhesh ::: Structure code for Issue Queue
 */
 
 #include "apex_macros.h"
+#include <stdbool.h>
 
 #define maxIQSize 24
 
@@ -73,13 +74,11 @@ bool isQueueEmpty(struct Queue* q);
 void printQueue(struct Queue* q);
 
 // add entry to the tail of the q
-void enQueue(struct Queue* q, int data);
+void enQueue(struct Queue* q, node_attr data);
 
 // delete the entry from q based on program counter
 void deQueueAnyNode(struct Queue* q,int val);
 
-// issue the instruction from q based on 2 condition mentioned in this method
-void issueInstruction(APEX_CPU *cpu)
 
 
 
