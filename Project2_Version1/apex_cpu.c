@@ -1314,7 +1314,7 @@ APEX_cpu_init(const char *filename)
     }
 
     //Initialize ROB
-    createROB();
+    // createROB();
 
     if (ENABLE_DEBUG_MESSAGES)
     {
