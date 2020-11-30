@@ -65,10 +65,10 @@ typedef struct Queue
 struct Queue* createQueue();
 
 // Check if q is full
-bool isQueueFull(struct Queue* q);
+int isQueueFull(struct Queue* q);
 
 // check if q is empty
-bool isQueueEmpty(struct Queue* q);
+int isQueueEmpty(struct Queue* q);
 
 // print the q
 void printQueue(struct Queue* q);
