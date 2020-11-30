@@ -13,6 +13,10 @@
 #include "issue_q.h"
 #include "utilities.h"
 
+// typedef struct URF;
+// typedef struct RAT;
+// typedef struct RRAT;
+
 /* Format of an APEX instruction  */
 typedef struct APEX_Instruction
 {
@@ -93,10 +97,12 @@ typedef struct APEX_CPU
 
     int mul_cycles;  //Mul unit takes 3 cycles to complete instruction
 
+    struct URF *urf[URFMaxSize];
+    struct RAT *rat[RATMaxSize];
+    struct RRAT *rrat[RRATMaxSize];
+    
     Queue *iq;
-    URF URF[URFMaxSize];
-    RAT RAT[RATMaxSize];
-    RRAT RRAT[RRATMaxSize];
+    
 
     /* Pipeline stages */
     CPU_Stage fetch;
