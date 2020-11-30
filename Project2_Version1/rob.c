@@ -15,14 +15,14 @@ void createROB()
     rob->tail = NULL;
     rob->size = 0;
 
-    return rob
+    return;
 }
 
 // Queue is full when size becomes
 // equal to the capacity
 int ROB_is_full()
 {
-    return (rob->size >= ROB_SIZE);
+    return (rob->size >= ROB_ENTRY_SIZE);
 }
 
 // Queue is empty when size is 0

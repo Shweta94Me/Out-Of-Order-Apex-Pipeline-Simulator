@@ -11,7 +11,6 @@
 
 #define FALSE 0x0
 #define TRUE 0x1
-#define ROB_SIZE 3
 /* Integers */
 #define DATA_MEMORY_SIZE 4096
 
