@@ -1,6 +1,8 @@
 #include "apex_macros.h"
 #include "apex_cpu.h"
 
+#define ROB_ENTRY_SIZE 24
+
 typedef struct ROB_entry
 {
     int pc_value;   //instruction address

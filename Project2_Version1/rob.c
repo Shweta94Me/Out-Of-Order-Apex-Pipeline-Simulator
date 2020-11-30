@@ -14,6 +14,8 @@ void createROB()
     rob->head = NULL;
     rob->tail = NULL;
     rob->size = 0;
+
+    return rob
 }
 
 // Queue is full when size becomes
