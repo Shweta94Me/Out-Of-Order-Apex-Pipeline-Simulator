@@ -1,7 +1,10 @@
+#ifndef _ROB_H_
+#define _ROB_H_
+
 #include "apex_macros.h"
 #include "apex_cpu.h"
 
-#define ROB_ENTRY_SIZE 24
+#define ROB_ENTRY_SIZE 7
 
 typedef struct ROB_entry
 {
@@ -37,3 +40,5 @@ int ROB_is_empty();
 void ROB_push(CPU_Stage);
 void ROB_pop();
 void forward_to_rob(CPU_Stage);
+
+#endif

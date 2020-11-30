@@ -8,7 +8,7 @@
             "name": "gcc.exe - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "C:\\Siddhesh\\coding\\test.exe",
+            "program": "C:\\Siddhesh\\COA\\Out-Of-Order-Apex-Pipeline-Simulator\\Project2_Version1\\rob_test.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
