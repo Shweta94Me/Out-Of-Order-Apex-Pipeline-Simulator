@@ -94,6 +94,8 @@ typedef struct APEX_CPU
 
     int mul_cycles;  //Mul unit takes 3 cycles to complete instruction
 
+    int stoppedDispatch; //Shweta ::: If we encounter branch instruction then stopped dispatching to Issue Queue
+    
     URF urf[URFMaxSize];
     RAT rat[RATMaxSize];
     RRAT rrat[RRATMaxSize];
@@ -106,6 +108,11 @@ typedef struct APEX_CPU
     CPU_Stage decode;
     CPU_Stage ex_int_fu;
     CPU_Stage ex_mul_fu;
+
+    /*Shweta ::: For handling branch and jump instructions*/
+    CPU_Stage jbu1;
+    CPU_Stage jbu2;
+
     //Shweta ::: Why two mem stages added ::: memory stage is pipelined into two
     CPU_Stage mem1; 
     CPU_Stage mem2;
