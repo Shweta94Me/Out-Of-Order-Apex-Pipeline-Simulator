@@ -12,10 +12,18 @@ typedef struct ROB_entry
     char inst_type; //
 } ROB_entry;
 
+typedef struct ROB_entry_node ROB_entry_node;
+
+struct ROB_entry_node
+{
+    ROB_entry entry;
+    ROB_entry_node *next;
+};
+
 typedef struct REORDER_BUFFER
 {
-    ROB_entry *entry;
-    int head, tail;
+    ROB_entry_node *head;
+    ROB_entry_node *tail;
     int size;
 } REORDER_BUFFER;
 
@@ -24,5 +32,6 @@ REORDER_BUFFER *rob;
 void createROB();
 int ROB_is_full();
 int ROB_is_empty();
-void ROB_push(CPU_Stage *instruction);
-ROB_entry ROB_pop();
+void ROB_push(CPU_Stage);
+void ROB_pop();
+void forward_to_rob(CPU_Stage);

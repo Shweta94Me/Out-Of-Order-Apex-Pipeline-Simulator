@@ -11,12 +11,12 @@
 
 #define FALSE 0x0
 #define TRUE 0x1
-
+#define ROB_SIZE 3
 /* Integers */
 #define DATA_MEMORY_SIZE 4096
 
 /* Size of integer register file */
-#define REG_FILE_SIZE 48  /*Shweta ::: Changed from 16 to 48*/
+#define REG_FILE_SIZE 48 /*Shweta ::: Changed from 16 to 48*/
 
 /* Numeric OPCODE identifiers for instructions */
 #define OPCODE_ADD 0x0
@@ -47,7 +47,6 @@
 
 /* Set this flag to 1 to enable cycle single-step mode */
 #define ENABLE_SINGLE_STEP 1
-
 
 /*Define size of IQ, ROB, URF, RAT, R-RAT*/
 
