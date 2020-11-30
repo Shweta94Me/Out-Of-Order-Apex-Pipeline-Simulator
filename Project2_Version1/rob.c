@@ -150,54 +150,52 @@ void forward_to_rob(CPU_Stage instruction)
     }
 }
 
-// Unit test code for rob 
-int main(){
+// // Unit test code for rob 
+// int main(){
 
-    createROB();
-    CPU_Stage cpustage;
+//     createROB();
+//     CPU_Stage cpustage;
 
-    cpustage.pc = 1;
-    cpustage.opcode = OPCODE_ADD;
-    cpustage.rd = 1;
-
-
-    printf("size -> %d \n", rob->size);  // 0
-    ROB_push(cpustage);
-    cpustage.pc = 2;
-    ROB_push(cpustage);
-    cpustage.pc = 3;
-    ROB_push(cpustage);
-    cpustage.pc = 4;
-    ROB_push(cpustage);
-    cpustage.pc = 5;
-    ROB_push(cpustage);
-    cpustage.pc = 6;
-    ROB_push(cpustage);
-    cpustage.pc = 7;
-    ROB_push(cpustage);
-    cpustage.pc = 8;
-    ROB_push(cpustage);  // this is 8th
-
-    printf("size -> %d \n", rob->size); // 7
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();  // this is 8th pop()  
-
-    printf("size -> %d \n ", rob->size); // 0
-    cpustage.pc = 9;
-    ROB_push(cpustage);
-    ROB_pop();
-    ROB_pop();
-    printf("size -> %d \n", rob->size); // 1
-
-    return 0;
+//     cpustage.pc = 1;
+//     cpustage.opcode = OPCODE_ADD;
+//     cpustage.rd = 1;
 
 
-}
+//     printf("size -> %d \n", rob->size);  // 0
+//     ROB_push(cpustage);
+//     cpustage.pc = 2;
+//     ROB_push(cpustage);
+//     cpustage.pc = 3;
+//     ROB_push(cpustage);
+//     cpustage.pc = 4;
+//     ROB_push(cpustage);
+//     cpustage.pc = 5;
+//     ROB_push(cpustage);
+//     cpustage.pc = 6;
+//     ROB_push(cpustage);
+//     cpustage.pc = 7;
+//     ROB_push(cpustage);
+//     cpustage.pc = 8;
+//     ROB_push(cpustage);  // this is 8th
+
+//     printf("size -> %d \n", rob->size); // 7
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();  // this is 8th pop()  
+
+//     printf("size -> %d \n ", rob->size); // 0
+//     cpustage.pc = 9;
+//     ROB_push(cpustage);
+//     ROB_pop();
+//     ROB_pop();
+//     printf("size -> %d \n", rob->size); // 1
+
+//     return 0;
+// }
 
 
