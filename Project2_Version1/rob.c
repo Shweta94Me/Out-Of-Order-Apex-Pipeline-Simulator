@@ -69,17 +69,6 @@ void ROB_push(CPU_Stage instruction)
         return;
     ROB_entry_node *node = ROB_create_entry(instruction);
 
-    // if(rob->head == NULL){
-    //     rob->head = node;
-    //     rob->size++;
-    // }else{
-    //     rob->tail->next = node;
-    //     rob->size++;
-    // }
-
-    // rob->tail = node;
-    // rob->tail->next = rob->head;
-
     if (!rob->tail)
     {
         rob->head = node;
@@ -107,25 +96,6 @@ void ROB_pop()
         //printf("reached here");
         return;
     }
-        
-    
-    // ROB_entry temp;
-    // if(rob->head == rob->tail){
-    //     temp = rob->head->entry;
-    //     free(rob->head);
-    //     rob->head = NULL;
-    //     rob->tail = NULL;
-    //     rob->size--;
-    // }
-    // else{
-        
-    //     ROB_entry_node* node = rob->head;
-    //     temp = node->entry;
-    //     rob->head = rob->head->next;
-    //     rob->tail->next = rob->head;
-    //     free(node);
-    //     rob->size--;
-    // }
 
     ROB_entry_node *node = rob->head;
     // ROB_update_RF(node->entry);
@@ -191,11 +161,47 @@ void forward_to_rob(CPU_Stage instruction)
 //     printf("size -> %d \n ", rob->size); // 0
 //     cpustage.pc = 9;
 //     ROB_push(cpustage);
-//     ROB_pop();
+//     ROB_pop();  //this pop cause segmentation fault
 //     ROB_pop();
 //     printf("size -> %d \n", rob->size); // 1
 
 //     return 0;
 // }
+
+
+
+//-------------------------------- Please dont uncomment this below code---------------------------------///
+// if(rob->head == NULL){
+    //     rob->head = node;
+    //     rob->size++;
+    // }else{
+    //     rob->tail->next = node;
+    //     rob->size++;
+    // }
+
+    // rob->tail = node;
+    // rob->tail->next = rob->head;
+
+
+
+    // ROB_entry temp;
+    // if(rob->head == rob->tail){
+    //     temp = rob->head->entry;
+    //     free(rob->head);
+    //     rob->head = NULL;
+    //     rob->tail = NULL;
+    //     rob->size--;
+    // }
+    // else{
+        
+    //     ROB_entry_node* node = rob->head;
+    //     temp = node->entry;
+    //     rob->head = rob->head->next;
+    //     rob->tail->next = rob->head;
+    //     free(node);
+    //     rob->size--;
+    // }
+
+
 
 
