@@ -1,10 +1,5 @@
-#ifndef _ROB_H_
-#define _ROB_H_
-
 #include "apex_macros.h"
-#include "apex_cpu.h"
-
-#define ROB_ENTRY_SIZE 64
+ #include "apex_cpu.h"
 
 typedef struct ROB_entry
 {
@@ -37,8 +32,6 @@ REORDER_BUFFER *rob;
 void createROB();
 int ROB_is_full();
 int ROB_is_empty();
-void ROB_push(CPU_Stage instruction);
+void ROB_push(CPU_Stage);
 void ROB_pop();
-void forward_to_rob(CPU_Stage instruction);
-
-#endif
+void forward_to_rob(CPU_Stage);
