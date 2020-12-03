@@ -444,6 +444,40 @@ APEX_fetch(APEX_CPU *cpu)
     }
 }
 
+ROB_entry create_ROB_data(APEX_CPU *cpu)
+{
+    ROB_entry entry;
+
+    entry.pc_value = cpu->decode.pc;
+    strcpy(entry.opcode_str, cpu->decode.opcode_str);
+
+    entry.rs1_arch = cpu->decode.rs1;
+    entry.rs1_tag = cpu->decode.rs1_phy_res;
+    
+
+    entry.rs2_arch = cpu->decode.rs2;
+    entry.rs2_tag = cpu->decode.rs2_phy_res;
+
+    entry.rs3_arch = cpu->decode.rs3;
+    entry.rs3_tag = cpu->decode.rs3_phy_res;
+
+    // data.FU_Type = cpu->decode.fu_type;
+
+    entry.imm = cpu->decode.imm;
+    entry.status = 1;
+
+    entry.phy_rd = cpu->decode.rd_phy_res;
+    entry.rd_arch = cpu->decode.rd;
+
+    return entry;
+}
+/*Add entry to ROB*/
+void add_instr_to_ROB(APEX_CPU *cpu)
+{
+    ROB_entry data = create_ROB_data(cpu);
+    ROB_push(data);
+}
+
 /*Make instruction entry to Issue Queue*/
 void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 {
@@ -510,6 +544,10 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
             enQueue(cpu->iq, data);
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu);
+            
         }
         else
         {
@@ -708,7 +746,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 static void
 APEX_decode(APEX_CPU *cpu)
 {
-    if (cpu->decode.has_insn && !isQueueFull(cpu->iq) && !cpu->stoppedDispatch)
+    if (cpu->decode.has_insn && !isQueueFull(cpu->iq) && !cpu->stoppedDispatch && !ROB_is_full())
     {
         /* Read operands from register file based on the instruction type */
         switch (cpu->decode.opcode)

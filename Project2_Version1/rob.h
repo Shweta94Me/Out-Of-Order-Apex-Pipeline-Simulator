@@ -6,11 +6,33 @@ typedef struct ROB_entry
 {
     int pc_value;   //instruction address
     int ar_address; //address of destination architectural register
-    int result;     //result of reg-to-reg or mem address
+    // int result;     //result of reg-to-reg or mem address
     int sval_valid; //only for STORE
                     // int ex_codes;   //exception codes
     int status;     //indication if the result is valid
-    char inst_type; //
+    // char inst_type; //
+
+    char opcode[128];
+
+    int rs1_arch; //rs1 arch
+    int rs1_tag; //src1 tag : store physical register address
+
+    int rs2_arch; //rs2 arch 
+    int rs2_tag; //src2 tag : store physical register address
+
+    // src 3 fields
+    int rs3_arch; //rs3 arch
+    int rs3_tag;  //src3 tag : store physical register address 
+
+    // destination
+    int rd_arch; //rd arch
+    int phy_rd; //Destination physical register
+
+    int imm;
+
+    char opcode_str[128];
+
+
 } ROB_entry;
 
 typedef struct ROB_entry_node ROB_entry_node;
