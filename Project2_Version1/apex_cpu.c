@@ -120,6 +120,47 @@ print_instruction(const CPU_Stage *stage)
     }
 }
 
+/* Debug function which prints the CPU stage content
+ *
+ * Note: You can edit this function to print in more detail
+ */
+static void
+print_stage_content(const char *name, const CPU_Stage *stage)
+{
+    printf("%-15s: pc(%d) ", name, stage->pc);
+    print_instruction(stage);
+    printf("\n");
+}
+
+/* Debug function which prints the register file
+ *
+ * Note: You are not supposed to edit this function
+ */
+static void
+print_reg_file(const APEX_CPU *cpu)
+{
+    int i;
+
+    printf("----------\n%s\n----------\n", "Registers:");
+
+    for (int i = 0; i < REG_FILE_SIZE / 2; ++i)
+    {
+        printf("R%-3d[%-3d] ", i, cpu->regs[i]);
+    }
+
+    printf("\n");
+
+    for (i = (REG_FILE_SIZE / 2); i < REG_FILE_SIZE; ++i)
+    {
+        printf("R%-3d[%-3d] ", i, cpu->regs[i]);
+    }
+
+    printf("\n");
+}
+
+
+/*Utility functions*/
+
 node_attr createData(APEX_CPU *cpu)
 {
     struct node_attr data;
@@ -325,43 +366,47 @@ void issueInstruction(APEX_CPU *cpu)
     free(temp);
 }
 
-/* Debug function which prints the CPU stage content
- *
- * Note: You can edit this function to print in more detail
- */
-static void
-print_stage_content(const char *name, const CPU_Stage *stage)
+ROB_entry create_ROB_data(APEX_CPU *cpu)
 {
-    printf("%-15s: pc(%d) ", name, stage->pc);
-    print_instruction(stage);
-    printf("\n");
+    ROB_entry entry;
+
+    entry.pc_value = cpu->decode.pc;
+    strcpy(entry.opcode_str, cpu->decode.opcode_str);
+
+    entry.rs1_arch = cpu->decode.rs1;
+    entry.rs1_tag = cpu->decode.rs1_phy_res;
+    
+
+    entry.rs2_arch = cpu->decode.rs2;
+    entry.rs2_tag = cpu->decode.rs2_phy_res;
+
+    entry.rs3_arch = cpu->decode.rs3;
+    entry.rs3_tag = cpu->decode.rs3_phy_res;
+
+    // data.FU_Type = cpu->decode.fu_type;
+
+    entry.imm = cpu->decode.imm;
+    entry.status = 1;
+
+    entry.phy_rd = cpu->decode.rd_phy_res;
+    entry.rd_arch = cpu->decode.rd;
+
+    return entry;
+}
+/*Add entry to ROB*/
+void add_instr_to_ROB(APEX_CPU *cpu)
+{
+    ROB_entry data = create_ROB_data(cpu);
+    ROB_push(data);
 }
 
-/* Debug function which prints the register file
- *
- * Note: You are not supposed to edit this function
- */
-static void
-print_reg_file(const APEX_CPU *cpu)
+/*Update ROB with computed result and make its status valid*/
+void update_ROB(CPU_Stage cpu_stage)
 {
-    int i;
-
-    printf("----------\n%s\n----------\n", "Registers:");
-
-    for (int i = 0; i < REG_FILE_SIZE / 2; ++i)
-    {
-        printf("R%-3d[%-3d] ", i, cpu->regs[i]);
-    }
-
-    printf("\n");
-
-    for (i = (REG_FILE_SIZE / 2); i < REG_FILE_SIZE; ++i)
-    {
-        printf("R%-3d[%-3d] ", i, cpu->regs[i]);
-    }
-
-    printf("\n");
+    forward_to_rob(cpu_stage.pc, cpu_stage.result_buffer);
 }
+
+/*Utility functions end*/
 
 /*
  * Fetch Stage of APEX Pipeline
@@ -442,40 +487,6 @@ APEX_fetch(APEX_CPU *cpu)
             cpu->fetch.has_insn = FALSE;
         }
     }
-}
-
-ROB_entry create_ROB_data(APEX_CPU *cpu)
-{
-    ROB_entry entry;
-
-    entry.pc_value = cpu->decode.pc;
-    strcpy(entry.opcode_str, cpu->decode.opcode_str);
-
-    entry.rs1_arch = cpu->decode.rs1;
-    entry.rs1_tag = cpu->decode.rs1_phy_res;
-    
-
-    entry.rs2_arch = cpu->decode.rs2;
-    entry.rs2_tag = cpu->decode.rs2_phy_res;
-
-    entry.rs3_arch = cpu->decode.rs3;
-    entry.rs3_tag = cpu->decode.rs3_phy_res;
-
-    // data.FU_Type = cpu->decode.fu_type;
-
-    entry.imm = cpu->decode.imm;
-    entry.status = 1;
-
-    entry.phy_rd = cpu->decode.rd_phy_res;
-    entry.rd_arch = cpu->decode.rd;
-
-    return entry;
-}
-/*Add entry to ROB*/
-void add_instr_to_ROB(APEX_CPU *cpu)
-{
-    ROB_entry data = create_ROB_data(cpu);
-    ROB_push(data);
 }
 
 /*Make instruction entry to Issue Queue*/
@@ -597,6 +608,9 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 
             node_attr data = createData(cpu);
             enQueue(cpu->iq, data);
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu);
         }
         else
         {
@@ -682,6 +696,9 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
             enQueue(cpu->iq, data);
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu);
         }
         else
         {
@@ -731,6 +748,9 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
             enQueue(cpu->iq, data);
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu);
         }
         else{
             //No physical register available in URF
@@ -980,6 +1000,8 @@ APEX_int_fu(APEX_CPU *cpu)
 
         /* Copy data from execute latch to memory latch*/
         // cpu->memory = cpu->ex_int_fu;  //Shweta ::: Instead of passing it to memory update ROB entry
+
+        update_ROB(cpu->ex_int_fu);
         //Clear int unit stage
         cpu->ex_int_fu.has_insn = FALSE;
         cpu->insn_completed++;
@@ -1013,7 +1035,7 @@ APEX_mul_fu(APEX_CPU *cpu)
                 broadcastData(cpu, cpu->ex_mul_fu.result_buffer, cpu->ex_mul_fu.rd_phy_res, Mul_FU); // only when completed 3 cycles
 
                 /* Copy data from execute latch to memory latch*/
-                // cpu->memory = cpu->ex_mul_fu; //Shweta ::: Instead of passing it to memory update ROB entry
+                update_ROB(cpu->ex_mul_fu); //Shweta ::: Instead of passing it to memory update ROB entry
                 
                 break;
             }
@@ -1156,6 +1178,7 @@ APEX_jbu2(APEX_CPU *cpu)
 
         /*Shweta ::: Open for dispatching*/
         cpu->stoppedDispatch = 0;
+        update_ROB(cpu->jbu2); 
         cpu->insn_completed++;
         cpu->jbu2.has_insn = FALSE;
 

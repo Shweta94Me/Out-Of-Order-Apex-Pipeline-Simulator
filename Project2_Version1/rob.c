@@ -137,20 +137,20 @@ void ROB_pop()
     
 }
 
-// void forward_to_rob(CPU_Stage instruction)
-// {
-//     ROB_entry_node *node = rob->head;
-//     while (node)
-//     {
-//         if (instruction.pc == node->entry.pc_value)
-//         {
-//             node->entry.result = instruction.result_buffer;
-//             node->entry.status = 1;
-//             return;
-//         }
-//         node = node->next;
-//     }
-// }
+void forward_to_rob(int pc, int result_buffer)
+{
+    ROB_entry_node *node = rob->head;
+    while (node)
+    {
+        if (pc == node->entry.pc_value)
+        {
+            node->entry.result = result_buffer;
+            node->entry.status = 1;
+            return;
+        }
+        node = node->next;
+    }
+}
 
 // // // Unit test code for rob 
 // int main(){
