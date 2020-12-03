@@ -43,17 +43,18 @@ char instruction_type(int opcode)
     }
 }
 
-ROB_entry_node *ROB_create_entry(int val)
+ROB_entry_node *ROB_create_entry(ROB_entry entry)
 {
     ROB_entry_node *node = (ROB_entry_node *)malloc(sizeof(ROB_entry_node));
     
-    ROB_entry entry = {
-        .ar_address = 0,
-        .pc_value = val,
-        .result = 0,
-        .sval_valid = 0,
-        .status = 1,
-    };
+    // ROB_entry entry = {
+    //     .ar_address = 0,
+    //     .pc_value = val,
+    //     .result = 0,
+    //     .sval_valid = 0,
+    //     .status = 1,
+    // };
+
     node->entry = entry;
     node->next = NULL;
     return node;
@@ -61,11 +62,11 @@ ROB_entry_node *ROB_create_entry(int val)
 
 // Function to add an item to the queue.
 // It changes rear and size
-void ROB_push(int val)
+void ROB_push(ROB_entry entry)
 {
     if (ROB_is_full())
         return;
-    ROB_entry_node *node = ROB_create_entry(val);
+    ROB_entry_node *node = ROB_create_entry(entry);
     // printf("Val -> %d \n ", node->entry.pc_value);
     if (!rob->tail)
     {
