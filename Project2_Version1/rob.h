@@ -6,7 +6,7 @@ typedef struct ROB_entry
 {
     int pc_value;   //instruction address
     int ar_address; //address of destination architectural register
-    // int result;     //result of reg-to-reg or mem address
+    int result;     //result of reg-to-reg or mem address
     int sval_valid; //only for STORE
                     // int ex_codes;   //exception codes
     int status;     //indication if the result is valid
