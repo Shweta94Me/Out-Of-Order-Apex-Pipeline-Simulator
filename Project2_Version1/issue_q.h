@@ -40,7 +40,7 @@ typedef struct node_attr{
     int rs2_value;
     int rs2_tag; //src2 tag : store physical register address 
 
-    // src 2 fields
+    // src 3 fields
     int rs3_arch; //rs3 arch
     int rs3_ready;
     int rs3_value;
