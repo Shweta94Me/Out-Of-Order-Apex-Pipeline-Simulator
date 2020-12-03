@@ -1313,8 +1313,9 @@ APEX_cpu_init(const char *filename)
         cpu->rrat[i].phy_reg_after_comit = -1;
     }
 
-    //Initialize ROB
-    // createROB();
+    //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to 
+    // the cpu just try to keep seperate.
+    createROB();
 
     if (ENABLE_DEBUG_MESSAGES)
     {

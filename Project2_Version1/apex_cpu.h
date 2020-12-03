@@ -12,6 +12,7 @@
 #include "apex_macros.h"
 #include "issue_q.h"
 #include "utilities.h"
+#include "rob.h"
 
 /* Format of an APEX instruction  */
 typedef struct APEX_Instruction
@@ -100,7 +101,6 @@ typedef struct APEX_CPU
     RRAT rrat[RRATMaxSize];
     
     Queue *iq;
-    
 
     /* Pipeline stages */
     CPU_Stage fetch;
