@@ -33,7 +33,7 @@ REORDER_BUFFER *rob;
 void createROB();
 int ROB_is_full();
 int ROB_is_empty();
-void ROB_push(int);
+void ROB_push(ROB_entry);
 void ROB_pop();
 // void forward_to_rob(CPU_Stage);
 
