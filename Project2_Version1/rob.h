@@ -59,7 +59,8 @@ void createROB();
 int ROB_is_full();
 int ROB_is_empty();
 void ROB_push(ROB_entry);
-void ROB_pop();
+int ROB_headEntryValid();
+int ROB_pop();
 void forward_to_rob(int pc, int result_buffer);
 #endif
 

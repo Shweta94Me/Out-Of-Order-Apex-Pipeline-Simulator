@@ -75,24 +75,28 @@ void ROB_push(ROB_entry entry)
 
 }
 
-void ROB_update_RF(ROB_entry entry)
-{
-    // TODO:
-}
+int ROB_headEntryValid(){
 
-void ROB_pop()
+    if (!ROB_is_empty() && rob->head->entry.status)
+        return rob->head->entry.phy_rd; 
+    else
+        return -1;
+}
+int ROB_pop()
 {
-    if (ROB_is_empty() || !rob->head->entry.status)
-        return;
+    // if (ROB_is_empty() || !rob->head->entry.status)
+    //     return;
     ROB_entry_node *node = rob->head;
     // printf("Val -> %d \n ", node->entry.pc_value);
-    ROB_update_RF(node->entry);
+    // ROB_update_RF(node->entry);
+    int rd_arch = node->entry.rd_arch;
     rob->head = rob->head->next;
     free(node);
     rob->size--;
     if (!rob->size)
         rob->head = rob->tail = 0;
 
+    return rd_arch;
     // if (ROB_is_empty() || !rob->head->entry.status)
     //     return;
     // ROB_entry temp;

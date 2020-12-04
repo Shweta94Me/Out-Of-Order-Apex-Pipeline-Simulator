@@ -43,7 +43,7 @@ int allocate_phy_dest_RAT(int rd);
 int renameSrcWithPhyReg(int rs);
 int readSrcFromURF(int phy_reg);
 void updateURF(int result, int phy_res, enum FU fu_type);
-
+void updateRRAT(int phy_rd, int arch_idx);
 void printURF();
 void printRAT();
 void printRRAT();

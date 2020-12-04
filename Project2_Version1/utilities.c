@@ -8,8 +8,8 @@ Shweta ::: Implementation of URF, RAT, R-RAT
 void initializeURF(){
     for (int i = 0; i < URFMaxSize; i++)
     {
-        urf[i].free = 0;
-        urf[i].status = 1;
+        urf[i].free = 0; //Intialize as free
+        urf[i].status = 0; //Intialize as Invalid 
         urf[i].value = 0;
     }
 }
@@ -90,6 +90,19 @@ void updateURF(int result, int phy_res, enum FU fu_type){
         urf[phy_res].value = result;
         urf[phy_res].status = 1;
     }
+}
+
+void freeRegFromURF(int last_commited_phy_reg)
+{   
+    //Free URF physical register
+    urf[last_commited_phy_reg].free = 0;
+}
+
+void updateRRAT(int phy_rd, int arch_idx)
+{
+    int last_commited_phy_reg = rrat[arch_idx].phy_reg_after_comit;
+    freeRegFromURF(last_commited_phy_reg);
+    rrat[arch_idx].phy_reg_after_comit = phy_rd; //update with latest commited physical register
 }
 
 void printURF(){
