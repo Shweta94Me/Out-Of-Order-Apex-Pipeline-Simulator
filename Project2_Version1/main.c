@@ -16,7 +16,7 @@ main(int argc, char const *argv[])
     APEX_CPU *cpu;
 
     fprintf(stderr, "APEX CPU Pipeline Simulator v%0.1lf\n", VERSION);
-
+    argc = 2;
     if (argc != 2)
     {
         fprintf(stderr, "APEX_Help: Usage %s <input_file>\n", argv[0]);

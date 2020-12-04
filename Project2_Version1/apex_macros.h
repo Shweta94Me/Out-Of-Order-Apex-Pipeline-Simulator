@@ -15,7 +15,7 @@
 #define DATA_MEMORY_SIZE 4096
 
 /* Size of integer register file */
-#define REG_FILE_SIZE 48 /*Shweta ::: Changed from 16 to 48*/
+#define REG_FILE_SIZE 16 
 
 /* Numeric OPCODE identifiers for instructions */
 #define OPCODE_ADD 0x0

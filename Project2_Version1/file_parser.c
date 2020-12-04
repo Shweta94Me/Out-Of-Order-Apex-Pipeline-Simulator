@@ -171,12 +171,27 @@ split_opcode_from_insn_string(char *buffer, char tokens[2][128])
     int token_num = 0;
 
     char *token = strtok(buffer, " ");
+    char *p;
 
     while (token != NULL)
     {
         strcpy(tokens[token_num], token);
         token_num++;
         token = strtok(NULL, " ");
+    }
+
+    p = tokens[0];
+
+    /* This removes the newline character at the end of
+    * single string opcodes like HALT or NOP */
+    while(*p != '\0')
+    {
+        if (*p == '\n')
+        {
+            *p = '\0';
+            break;
+        }
+        p++;
     }
 }
 

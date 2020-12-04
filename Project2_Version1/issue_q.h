@@ -22,6 +22,9 @@ typedef struct node_attr{
     int val;
     int pc;
     char opcode_str[128];
+
+    int opcode;
+    
     enum FU FU_Type;
     int imm;
     int status; 

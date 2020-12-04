@@ -166,7 +166,7 @@ node_attr createData(APEX_CPU *cpu)
     struct node_attr data;
     data.pc = cpu->decode.pc;
     strcpy(data.opcode_str, cpu->decode.opcode_str);
-
+    data.opcode = cpu->decode.opcode;
     data.rs1_arch = cpu->decode.rs1;
     data.rs1_tag = cpu->decode.rs1_phy_res;
     data.rs1_ready = cpu->decode.rs1_ready;
@@ -197,7 +197,7 @@ void updateIQ(APEX_CPU *cpu, enum FU fu_type)
 {
     struct node *temp = cpu->iq->front;
 
-    while (temp)
+    while (temp && !isQueueEmpty(cpu->iq))
     {
         if (fu_type == Int_FU)
         {
@@ -274,7 +274,7 @@ void issueInstruction(APEX_CPU *cpu)
     int int_fu_flag = 0; // using this flag to know if we sent any instruction in int fu
     int mul_fu_flag = 0; // using thus flag to know if we sent any instruction in mul fu
 
-    while (temp)
+    while (temp && !isQueueEmpty(cpu->iq))
     {
 
         /* suppose we have mul instruction at front of the q and mul fu is free then we issue mul instruction to the mul fu
@@ -289,6 +289,8 @@ void issueInstruction(APEX_CPU *cpu)
             // and ... even if the while loop continues till the end of the q. Early stopping is not possible
 
             // only copying all the important data from iq to next stage i.e int_fu
+            cpu->ex_mul_fu.pc = temp->data.pc;           
+            cpu->ex_mul_fu.opcode = temp->data.opcode;
             cpu->ex_mul_fu.fu_type = temp->data.FU_Type;
             cpu->ex_mul_fu.has_insn = 1;
             cpu->ex_mul_fu.imm = temp->data.imm;
@@ -313,7 +315,8 @@ void issueInstruction(APEX_CPU *cpu)
             deQueueAnyNode(cpu->iq, temp->data.pc);
 
             //setting flag to 1
-            int_fu_flag = 1;
+            mul_fu_flag = 1;
+
         }
 
         if (temp->data.FU_Type == Int_FU && !cpu->int_fu_free && temp->data.rs1_ready && temp->data.rs2_ready)
@@ -322,6 +325,8 @@ void issueInstruction(APEX_CPU *cpu)
             // and ... even if the while loop continues till the end of the q. Early stopping is not possible
 
             // only copying all the important data from iq to next stage i.e int_fu
+            cpu->ex_int_fu.pc = temp->data.pc;           
+            cpu->ex_int_fu.opcode = temp->data.opcode;
             cpu->ex_int_fu.fu_type = temp->data.FU_Type;
             cpu->ex_int_fu.has_insn = 1;
             cpu->ex_int_fu.imm = temp->data.imm;
@@ -344,11 +349,9 @@ void issueInstruction(APEX_CPU *cpu)
 
             //deleting this node from the q
             deQueueAnyNode(cpu->iq, temp->data.pc);
-
             //setting flag to 1
-            mul_fu_flag = 1;
+            int_fu_flag = 1;
         }
-
         temp = temp->next;
     }
 
@@ -439,8 +442,11 @@ APEX_fetch(APEX_CPU *cpu)
         cpu->fetch.opcode = current_ins->opcode;
         cpu->fetch.rd = current_ins->rd;
         cpu->fetch.rs1 = current_ins->rs1;
+        cpu->fetch.rs1_phy_res = -1;
         cpu->fetch.rs2 = current_ins->rs2;
+        cpu->fetch.rs2_phy_res = -1;
         cpu->fetch.rs3 = current_ins->rs3;
+        cpu->fetch.rs3_phy_res = -1;
         cpu->fetch.imm = current_ins->imm;
 
         /* Update PC for next instruction */
@@ -476,7 +482,7 @@ APEX_fetch(APEX_CPU *cpu)
             /* Copy data from fetch latch to decode latch*/
             cpu->decode = cpu->fetch;
         }
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && cpu->fetch.has_insn)
         {
             print_stage_content("Fetch", &cpu->fetch);
         }
@@ -766,96 +772,99 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 static void
 APEX_decode(APEX_CPU *cpu)
 {
-    if (cpu->decode.has_insn && !isQueueFull(cpu->iq) && !cpu->stoppedDispatch && !ROB_is_full())
+    if (cpu->decode.has_insn)
     {
-        /* Read operands from register file based on the instruction type */
-        switch (cpu->decode.opcode)
+        if(!isQueueFull(cpu->iq) && !cpu->stoppedDispatch && !ROB_is_full())
         {
-            case OPCODE_ADD:
-            case OPCODE_SUB:
-            case OPCODE_AND:
-            case OPCODE_OR:
-            case OPCODE_XOR:
-            case OPCODE_MOVC:
-            case OPCODE_ADDL:
-            case OPCODE_SUBL:
-            case OPCODE_CMP:
+            /* Read operands from register file based on the instruction type */
+            switch (cpu->decode.opcode)
             {
-                dispatch_instr_to_IQ(cpu, Int_FU);
-
-                if (!cpu->decode.stalled)
+                case OPCODE_ADD:
+                case OPCODE_SUB:
+                case OPCODE_AND:
+                case OPCODE_OR:
+                case OPCODE_XOR:
+                case OPCODE_MOVC:
+                case OPCODE_ADDL:
+                case OPCODE_SUBL:
+                case OPCODE_CMP:
                 {
+                    dispatch_instr_to_IQ(cpu, Int_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->ex_int_fu = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_LOAD:
+                case OPCODE_LDR:
+                case OPCODE_STORE:
+                case OPCODE_STR:
+                {
+                    dispatch_instr_to_IQ(cpu, Mem_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->mem1 = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_MUL:
+                {
+                    dispatch_instr_to_IQ(cpu, Mul_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->ex_mul_fu = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_HALT:
+                {
+                    dispatch_instr_to_IQ(cpu, Int_FU);
                     /* Copy data from decode latch to execute latch*/
                     // cpu->ex_int_fu = cpu->decode;
                     cpu->decode.has_insn = FALSE;
+                    break;
                 }
-                break;
-            }
 
-            case OPCODE_LOAD:
-            case OPCODE_LDR:
-            case OPCODE_STORE:
-            case OPCODE_STR:
-            {
-                dispatch_instr_to_IQ(cpu, Mem_FU);
-
-                if (!cpu->decode.stalled)
+                case OPCODE_BZ:
+                case OPCODE_BNZ:
+                case OPCODE_JAL:
+                case OPCODE_JUMP:
                 {
-                    /* Copy data from decode latch to execute latch*/
-                    // cpu->mem1 = cpu->decode;
-                    cpu->decode.has_insn = FALSE;
+                    dispatch_instr_to_IQ(cpu, JBU_FU);
+                    if(!cpu->decode.stalled){
+                        ///Create we are going to stopped dispatching 
+                        cpu->stoppedDispatch = 1;
+                        cpu->decode.has_insn = FALSE; //As we have pushed branch instruction to Issue Queue clear the decode stage
+                    }
+                    break;
                 }
-                break;
             }
 
-            case OPCODE_MUL:
+            if (ENABLE_DEBUG_MESSAGES)
             {
-                dispatch_instr_to_IQ(cpu, Mul_FU);
-
-                if (!cpu->decode.stalled)
-                {
-                    /* Copy data from decode latch to execute latch*/
-                    // cpu->ex_mul_fu = cpu->decode;
-                    cpu->decode.has_insn = FALSE;
-                }
-                break;
-            }
-
-            case OPCODE_HALT:
-            {
-                dispatch_instr_to_IQ(cpu, Int_FU);
-                /* Copy data from decode latch to execute latch*/
-                // cpu->ex_int_fu = cpu->decode;
-                cpu->decode.has_insn = FALSE;
-                break;
-            }
-
-            case OPCODE_BZ:
-            case OPCODE_BNZ:
-            case OPCODE_JAL:
-            case OPCODE_JUMP:
-            {
-                dispatch_instr_to_IQ(cpu, JBU_FU);
-                if(!cpu->decode.stalled){
-                    ///Create we are going to stopped dispatching 
-                    cpu->stoppedDispatch = 1;
-                    cpu->decode.has_insn = FALSE; //As we have pushed branch instruction to Issue Queue clear the decode stage
-                }
-                break;
-            }
+                print_stage_content("Decode/RF", &cpu->decode);
+            }   
         }
-
-        if (ENABLE_DEBUG_MESSAGES)
+        else
         {
-            print_stage_content("Decode/RF", &cpu->decode);
-        }
-    }
-    else
-    {
-        cpu->decode.stalled = 1;
-        if (ENABLE_DEBUG_MESSAGES)
-        {
-            print_stage_content("Decode/RF", &cpu->decode);
+            cpu->decode.stalled = 1;
+            if (ENABLE_DEBUG_MESSAGES)
+            {
+                print_stage_content("Decode/RF", &cpu->decode);
+            }
         }
     }
 }
@@ -1385,14 +1394,14 @@ APEX_cpu_init(const char *filename)
                 cpu->code_memory_size);
         fprintf(stderr, "APEX_CPU: PC initialized to %d\n", cpu->pc);
         fprintf(stderr, "APEX_CPU: Printing Code Memory\n");
-        printf("%-9s %-9s %-9s %-9s %-9s\n", "opcode_str", "rd", "rs1", "rs2",
+        printf("%-9s %-9s %-9s %-9s %-9s %-9s\n", "opcode_str", "rd", "rs1", "rs2", "rs3",
                "imm");
 
         for (i = 0; i < cpu->code_memory_size; ++i)
         {
-            printf("%-9s %-9d %-9d %-9d %-9d\n", cpu->code_memory[i].opcode_str,
+            printf("%-9s %-9d %-9d %-9d %-9d %-9d\n", cpu->code_memory[i].opcode_str,
                    cpu->code_memory[i].rd, cpu->code_memory[i].rs1,
-                   cpu->code_memory[i].rs2, cpu->code_memory[i].imm);
+                   cpu->code_memory[i].rs2, cpu->code_memory[i].rs3, cpu->code_memory[i].imm);
         }
     }
 
@@ -1418,18 +1427,20 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("Clock Cycle #: %d\n", cpu->clock);
             printf("--------------------------------------------\n");
         }
-
-        // if (APEX_writeback(cpu))
-        // {
-        //     /* Halt in writeback stage */
-        //     printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
-        //     break;
-        // }
+        
+        /*Shweta ::: Stop excutation once reached code_memory_size*/
+        if (cpu->insn_completed == cpu->code_memory_size)
+        {
+            /* Halt in writeback stage */
+            printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
+            break;
+        }
 
         APEX_memory2(cpu);
         APEX_memory1(cpu);
         APEX_jbu2(cpu);
         APEX_jbu1(cpu);
+        issueInstruction(cpu);
         if (cpu->ex_int_fu.has_insn)
         {
             APEX_int_fu(cpu);
@@ -1438,12 +1449,15 @@ void APEX_cpu_run(APEX_CPU *cpu)
         {
             APEX_mul_fu(cpu);
         }
-        issueInstruction(cpu);
+        
         APEX_decode(cpu);
         APEX_fetch(cpu);
 
         print_reg_file(cpu);
 
+        /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
+        printQueue(cpu->iq); 
+        
         if (cpu->single_step)
         {
             printf("Press any key to advance CPU Clock or <q> to quit:\n");
