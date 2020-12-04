@@ -29,32 +29,10 @@ int ROB_is_empty()
     return (rob->size == 0);
 }
 
-char instruction_type(int opcode)
-{
-    switch (opcode)
-    {
-    case OPCODE_STORE:
-    case OPCODE_LOAD:
-    case OPCODE_LDR:
-    case OPCODE_STR:
-        return 'm';
-    default:
-        return 'r';
-    }
-}
-
 ROB_entry_node *ROB_create_entry(ROB_entry entry)
 {
     ROB_entry_node *node = (ROB_entry_node *)malloc(sizeof(ROB_entry_node));
     
-    // ROB_entry entry = {
-    //     .ar_address = 0,
-    //     .pc_value = val,
-    //     .result = 0,
-    //     .sval_valid = 0,
-    //     .status = 1,
-    // };
-
     node->entry = entry;
     node->next = NULL;
     return node;
@@ -152,39 +130,65 @@ void forward_to_rob(int pc, int result_buffer)
     }
 }
 
-// // // Unit test code for rob 
-// int main(){
+void printROB(){
 
-//     createROB();
+    ROB_entry_node* temp = rob->head;
+    printf("\nElements in Circular Queue are: \n");
+    while(!ROB_is_empty() && temp->next){
+        printf("%d<-", temp->entry.pc_value);
+        temp = temp->next;
+    }
+    printf("%d<-\n", temp->entry.pc_value);
+}
 
-//     printf("size -> %d \n", rob->size);  // 0
-//     ROB_push(1);
-//     ROB_push(2);
-//     ROB_push(3);
-//     ROB_push(4);
-//     ROB_push(5);
-//     ROB_push(6);
-//     ROB_push(7);
-//     ROB_push(8);  // this is 8th
+// //    Unit test code for rob
+// //    gcc -o rob_test issue_q.c   /// this command is for individual rob testing
+// //    ./rob_test.exe 
+int main(){
 
-//     printf("size -> %d \n", rob->size); // 7
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();
-//     ROB_pop();  // this is 8th pop()  
+    createROB();
 
-//     printf("size -> %d \n ", rob->size); // 0
-//     ROB_push(9);
-//     printf("size -> %d \n", rob->size); // 1
-//     ROB_pop();  //this pop cause segmentation fault
-//     ROB_pop();
-//     printf("size -> %d \n", rob->size); // 0
+    printf("size -> %d \n", rob->size);  // 0
+    ROB_entry entry;
+    entry.pc_value = 1;
+    ROB_push(entry);
+    entry.pc_value = 2;
+    ROB_push(entry);
+    entry.pc_value = 3;
+    ROB_push(entry);
+    entry.pc_value = 4;
+    ROB_push(entry);
+    entry.pc_value = 5;
+    ROB_push(entry);
+    entry.pc_value = 6;
+    ROB_push(entry);
+    entry.pc_value = 7;
+    ROB_push(entry);
+    entry.pc_value = 8;
+    ROB_push(entry);  // this is 8th
 
-//     return 0;
-// }
+    printROB();
+
+    printf("size -> %d \n", rob->size); // 7
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();
+    ROB_pop();  // this is 8th pop()  
+
+    printf("size -> %d \n ", rob->size); // 0
+    entry.pc_value = 9;
+    ROB_push(entry);
+    printROB();
+    printf("size -> %d \n", rob->size); // 1
+    ROB_pop();  
+    ROB_pop();
+    printf("size -> %d \n", rob->size); // 0
+
+    return 0;
+}
 
 
