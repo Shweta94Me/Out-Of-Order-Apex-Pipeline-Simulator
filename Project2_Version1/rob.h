@@ -35,6 +35,8 @@ typedef struct ROB_entry
 
     char opcode_str[128];
 
+    int mready;
+
 
 } ROB_entry;
 
