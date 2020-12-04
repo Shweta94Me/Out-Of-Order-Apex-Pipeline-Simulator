@@ -144,51 +144,51 @@ void printROB(){
 // //    Unit test code for rob
 // //    gcc -o rob_test issue_q.c   /// this command is for individual rob testing
 // //    ./rob_test.exe 
-int main(){
+// int main(){
 
-    createROB();
+//     createROB();
 
-    printf("size -> %d \n", rob->size);  // 0
-    ROB_entry entry;
-    entry.pc_value = 1;
-    ROB_push(entry);
-    entry.pc_value = 2;
-    ROB_push(entry);
-    entry.pc_value = 3;
-    ROB_push(entry);
-    entry.pc_value = 4;
-    ROB_push(entry);
-    entry.pc_value = 5;
-    ROB_push(entry);
-    entry.pc_value = 6;
-    ROB_push(entry);
-    entry.pc_value = 7;
-    ROB_push(entry);
-    entry.pc_value = 8;
-    ROB_push(entry);  // this is 8th
+//     printf("size -> %d \n", rob->size);  // 0
+//     ROB_entry entry;
+//     entry.pc_value = 1;
+//     ROB_push(entry);
+//     entry.pc_value = 2;
+//     ROB_push(entry);
+//     entry.pc_value = 3;
+//     ROB_push(entry);
+//     entry.pc_value = 4;
+//     ROB_push(entry);
+//     entry.pc_value = 5;
+//     ROB_push(entry);
+//     entry.pc_value = 6;
+//     ROB_push(entry);
+//     entry.pc_value = 7;
+//     ROB_push(entry);
+//     entry.pc_value = 8;
+//     ROB_push(entry);  // this is 8th
 
-    printROB();
+//     printROB();
 
-    printf("size -> %d \n", rob->size); // 7
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();
-    ROB_pop();  // this is 8th pop()  
+//     printf("size -> %d \n", rob->size); // 7
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();
+//     ROB_pop();  // this is 8th pop()  
 
-    printf("size -> %d \n ", rob->size); // 0
-    entry.pc_value = 9;
-    ROB_push(entry);
-    printROB();
-    printf("size -> %d \n", rob->size); // 1
-    ROB_pop();  
-    ROB_pop();
-    printf("size -> %d \n", rob->size); // 0
+//     printf("size -> %d \n ", rob->size); // 0
+//     entry.pc_value = 9;
+//     ROB_push(entry);
+//     printROB();
+//     printf("size -> %d \n", rob->size); // 1
+//     ROB_pop();  
+//     ROB_pop();
+//     printf("size -> %d \n", rob->size); // 0
 
-    return 0;
-}
+//     return 0;
+// }
 
 

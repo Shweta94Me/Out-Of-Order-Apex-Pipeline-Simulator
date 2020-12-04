@@ -111,7 +111,8 @@ void printQueue()
 
 		while(temp)
 		{
-			printf("PC : %d", temp->data.pc);
+			printf("PC : %d -> ", temp->data.pc);
+
 			temp = temp->next;
 		}
 		printf("\n");
