@@ -1,3 +1,6 @@
+#ifndef _ROB_H_
+#define _ROB_H_
+
 #include "apex_macros.h"
 
 #define ROB_SIZE 24
@@ -58,6 +61,7 @@ int ROB_is_empty();
 void ROB_push(ROB_entry);
 void ROB_pop();
 void forward_to_rob(int pc, int result_buffer);
+#endif
 
 
 
