@@ -119,63 +119,66 @@ void printQueue(struct Queue* q)
 }
 
 // // Unit test code for Issue q 
+// gcc -o issueq_test issue_q.c   /// this command is for individual issue q testing
+//   ./issueq_test.exe
+
 // int main(){
 
-//     Queue* q = createQueue();
+//     createQueue();
 
-// 	printf("Val -> %d \n ", q->sizeOfQueue);  // 0
+// 	printf("Val -> %d \n ", iq->sizeOfQueue);  // 0
 // 	node_attr data1;
 // 	data1.pc = 1;
-// 	enQueue(q,data1);
+// 	enQueue(data1);
 
 // 	node_attr data2;
 // 	data2.pc = 2;
-// 	enQueue(q,data2);
+// 	enQueue(data2);
 
 // 	node_attr data3;
 // 	data3.pc = 3;
-// 	enQueue(q,data3);
+// 	enQueue(data3);
 
 // 	node_attr data4;
 // 	data4.pc = 4;
-// 	enQueue(q,data4);
+// 	enQueue(data4);
 
 // 	node_attr data5;
 // 	data5.pc = 5;
-// 	enQueue(q,data5);
+// 	enQueue(data5);
 
 // 	node_attr data6;
 // 	data6.pc = 6;
-// 	enQueue(q,data6);
+// 	enQueue(data6);
 
-// 	printf("Val -> %d \n ", q->sizeOfQueue); // 5
+// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 5
 
-// 	deQueueAnyNode(q,2);
-// 	deQueueAnyNode(q,3);
-// 	deQueueAnyNode(q,5);
-// 	deQueueAnyNode(q,6);
-// 	printQueue(q);
-// 	deQueueAnyNode(q,1);
-// 	deQueueAnyNode(q,4);
+// 	deQueueAnyNode(2);
+// 	deQueueAnyNode(3);
+// 	deQueueAnyNode(5);
+// 	deQueueAnyNode(6);
+// 	printQueue();
+// 	deQueueAnyNode(1);
+// 	deQueueAnyNode(4);
 
-// 	printf("Val -> %d \n ", q->sizeOfQueue); // 0
+// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 0
 	
 
 // 	node_attr data7;
 // 	data7.pc = 7;
-// 	enQueue(q,data7);
+// 	enQueue(data7);
 
 // 	node_attr data8;
 // 	data8.pc = 8;
-// 	enQueue(q,data8);
+// 	enQueue(data8);
 
-// 	printQueue(q);
-// 	printf("Val -> %d \n ", q->sizeOfQueue); // 2 
+// 	printQueue();
+// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 2 
 
-// 	deQueueAnyNode(q,8);
-// 	deQueueAnyNode(q,7);
+// 	deQueueAnyNode(8);
+// 	deQueueAnyNode(7);
 
-// 	printf("Val -> %d \n ", q->sizeOfQueue); // 0
+// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 0
 
 // 	return 0;
 // }

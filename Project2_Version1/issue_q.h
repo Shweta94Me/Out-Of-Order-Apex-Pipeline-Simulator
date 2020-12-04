@@ -29,8 +29,6 @@ typedef struct node_attr{
     int imm;
     int status; 
     
-
-
     // src 1 fields
     int rs1_arch; //rs1 arch 
     int rs1_ready; 
