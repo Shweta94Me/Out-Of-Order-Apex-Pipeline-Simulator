@@ -6,7 +6,6 @@ Siddhesh ::: Structure code for Issue Queue
 #define _ISSUE_Q_H_
 
 #include "apex_macros.h"
-#include <stdbool.h>
 
 #define maxIQSize 24
 
@@ -24,7 +23,7 @@ typedef struct node_attr{
     char opcode_str[128];
 
     int opcode;
-    
+
     enum FU FU_Type;
     int imm;
     int status; 
@@ -66,23 +65,25 @@ typedef struct Queue
 	int sizeOfQueue;
 }Queue;
 
+Queue *iq;
+
 // Create the q. creation done in apex_cpu.c initialize
-struct Queue* createQueue();
+void createQueue();
 
 // Check if q is full
-int isQueueFull(struct Queue* q);
+int isQueueFull();
 
 // check if q is empty
-int isQueueEmpty(struct Queue* q);
+int isQueueEmpty();
 
 // print the q
-void printQueue(struct Queue* q);
+void printQueue();
 
 // add entry to the tail of the q
-void enQueue(struct Queue* q, node_attr data);
+void enQueue(node_attr data);
 
 // delete the entry from q based on program counter
-void deQueueAnyNode(struct Queue* q,int val);
+void deQueueAnyNode(int val);
 #endif
 
 

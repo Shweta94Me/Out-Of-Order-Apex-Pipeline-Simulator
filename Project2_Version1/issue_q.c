@@ -5,61 +5,59 @@ Siddhesh ::: Implementation for Issue Queue
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include "issue_q.h"
 
-struct node* newNode(node_attr data)
+node *newNode(node_attr data)
 {
-	struct node* temp = (struct node*)malloc(sizeof(struct node));
+	node *temp = (node*)malloc(sizeof(node));
 	temp->data = data;
 	temp->next = NULL;
 	return temp;
 }
 
-struct Queue* createQueue()
+void createQueue()
 {
-	struct Queue* q = (struct Queue*)malloc(sizeof(struct Queue));
-	q->front = q->rear = NULL;
-	q->sizeOfQueue = 0;
-	return q;
+	iq = (Queue*)malloc(sizeof(Queue));
+	iq->front = iq->rear = NULL;
+	iq->sizeOfQueue = 0;
 }
 
 
-int isQueueFull(struct Queue* q)
+int isQueueFull()
 {
-	if (q->sizeOfQueue < maxIQSize)
+	if (iq->sizeOfQueue < maxIQSize)
 	{
 		return 0;
 	}
 	return 1;
 }
 
-int isQueueEmpty(struct Queue* q)
+int isQueueEmpty()
 {
-	if (q->front == NULL)
+	if (iq->front == NULL)
 	{
 		return 1;
 	}
 	return 0;
 }
 
-void enQueue(struct Queue* q, node_attr data)
+void enQueue(node_attr data)
 {
-	if(!isQueueFull(q)){
+	if(!isQueueFull()){
 
 		// struct node_attr data = createData(cpu);
 
-		struct node* temp = newNode(data);
+		node *temp = newNode(data);
 
-		if (q->rear == NULL)
+		if (iq->rear == NULL)
 		{
-			q->front = q->rear = temp;
-			q->sizeOfQueue++;
+			iq->front = iq->rear = temp;
+			iq->sizeOfQueue++;
 			return;
 		}
-		q->rear->next = temp;
-		q->rear = temp;
-		q->sizeOfQueue++;
+		iq->rear->next = temp;
+		iq->rear = temp;
+		iq->sizeOfQueue++;
 	}
 	else{
 		// printf("Queue is Full");
@@ -69,17 +67,17 @@ void enQueue(struct Queue* q, node_attr data)
 }
 
 
-void deQueueAnyNode(struct Queue* q,int val){
-	if(!isQueueEmpty(q))
+void deQueueAnyNode(int val){
+	if(!isQueueEmpty())
 	{
-		struct node* temp = q->front, *prev;
+		struct node* temp = iq->front, *prev;
 
 		if(temp->data.pc == val){
-			q->front = q->front->next;
-			q->sizeOfQueue--;
-			if (q->front == NULL)
+			iq->front = iq->front->next;
+			iq->sizeOfQueue--;
+			if (iq->front == NULL)
 			{
-				q->rear = NULL;
+				iq->rear = NULL;
 			}
 			free(temp);
 			return;
@@ -94,7 +92,7 @@ void deQueueAnyNode(struct Queue* q,int val){
 		if (temp == NULL) return;
 
 		prev->next = temp->next;
-		q->sizeOfQueue--;
+		iq->sizeOfQueue--;
 		free(temp);
 
 		return;
@@ -106,16 +104,25 @@ void deQueueAnyNode(struct Queue* q,int val){
 	}
 }
 
-void printQueue(struct Queue* q)
+void printQueue()
 {
-	struct node* temp = q->front;
+	if(!isQueueEmpty()){
+		struct node* temp = iq->front;
 
-	while(temp)
-	{
-		printf("%d ->", temp->data.pc);
-		temp = temp->next;
+		while(temp)
+		{
+			printf("PC : %d -> ", temp->data.pc);
+
+			temp = temp->next;
+		}
+		printf("\n");
 	}
-	printf("\n");
+	else
+	{
+		printf("Issue Queue is Empty. \n");
+	}
+	
+	
 }
 
 // // Unit test code for Issue q 

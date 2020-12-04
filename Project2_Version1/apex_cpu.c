@@ -163,7 +163,7 @@ print_reg_file(const APEX_CPU *cpu)
 
 node_attr createData(APEX_CPU *cpu)
 {
-    struct node_attr data;
+    node_attr data;
     data.pc = cpu->decode.pc;
     strcpy(data.opcode_str, cpu->decode.opcode_str);
     data.opcode = cpu->decode.opcode;
@@ -195,9 +195,9 @@ node_attr createData(APEX_CPU *cpu)
 
 void updateIQ(APEX_CPU *cpu, enum FU fu_type)
 {
-    struct node *temp = cpu->iq->front;
+    struct node *temp = iq->front;
 
-    while (temp && !isQueueEmpty(cpu->iq))
+    while (temp && !isQueueEmpty())
     {
         if (fu_type == Int_FU)
         {
@@ -269,12 +269,12 @@ iterate in the q and look for the instruction that satisfies this condition
 void issueInstruction(APEX_CPU *cpu)
 {
 
-    struct node *temp = cpu->iq->front;
+    struct node *temp = iq->front;
 
     int int_fu_flag = 0; // using this flag to know if we sent any instruction in int fu
     int mul_fu_flag = 0; // using thus flag to know if we sent any instruction in mul fu
 
-    while (temp && !isQueueEmpty(cpu->iq))
+    while (temp && !isQueueEmpty())
     {
 
         /* suppose we have mul instruction at front of the q and mul fu is free then we issue mul instruction to the mul fu
@@ -312,7 +312,7 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->ex_mul_fu.rs3_value = temp->data.rs3_value;
 
             //deleting this node from the q
-            deQueueAnyNode(cpu->iq, temp->data.pc);
+            deQueueAnyNode(temp->data.pc);
 
             //setting flag to 1
             mul_fu_flag = 1;
@@ -348,7 +348,7 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->ex_int_fu.rs3_value = temp->data.rs3_value;
 
             //deleting this node from the q
-            deQueueAnyNode(cpu->iq, temp->data.pc);
+            deQueueAnyNode(temp->data.pc);
             //setting flag to 1
             int_fu_flag = 1;
         }
@@ -560,7 +560,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             }
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
-            enQueue(cpu->iq, data);
+            enQueue(data);
 
             // adding instruction to rob
             add_instr_to_ROB(cpu);
@@ -613,7 +613,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             cpu->decode.rs3_ready = 1;
 
             node_attr data = createData(cpu);
-            enQueue(cpu->iq, data);
+            enQueue(data);
 
             // adding instruction to rob
             add_instr_to_ROB(cpu);
@@ -701,7 +701,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
-            enQueue(cpu->iq, data);
+            enQueue(data);
 
             // adding instruction to rob
             add_instr_to_ROB(cpu);
@@ -753,7 +753,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
-            enQueue(cpu->iq, data);
+            enQueue(data);
 
             // adding instruction to rob
             add_instr_to_ROB(cpu);
@@ -774,7 +774,7 @@ APEX_decode(APEX_CPU *cpu)
 {
     if (cpu->decode.has_insn)
     {
-        if(!isQueueFull(cpu->iq) && !cpu->stoppedDispatch && !ROB_is_full())
+        if(!isQueueFull() && !cpu->stoppedDispatch && !ROB_is_full())
         {
             /* Read operands from register file based on the instruction type */
             switch (cpu->decode.opcode)
@@ -1361,7 +1361,7 @@ APEX_cpu_init(const char *filename)
     }
 
     // Initialize Issue Queue
-    cpu->iq = createQueue();
+    createQueue();
 
     // Initiliaze URF
     for (int i = 0; i < URFMaxSize; i++)
@@ -1456,8 +1456,8 @@ void APEX_cpu_run(APEX_CPU *cpu)
         print_reg_file(cpu);
 
         /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
-        printQueue(cpu->iq); 
-        
+        printQueue(); 
+
         if (cpu->single_step)
         {
             printf("Press any key to advance CPU Clock or <q> to quit:\n");
