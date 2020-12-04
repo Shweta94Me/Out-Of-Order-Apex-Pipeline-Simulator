@@ -1,13 +1,37 @@
 /*
 Shweta ::: Implementation of URF, RAT, R-RAT
 */
-
+#include <stdio.h>
+#include <string.h>
 #include "utilities.h"
+
+void initializeURF(){
+    for (int i = 0; i < URFMaxSize; i++)
+    {
+        urf[i].free = 0;
+        urf[i].status = 1;
+        urf[i].value = 0;
+    }
+}
+
+void initializeRAT(){
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+        rat[i].phy_reg_num = -1;
+    }
+}
+
+void initializeRRAT(){
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+        rrat[i].phy_reg_after_comit = -1;
+    }
+}
 
 
 //Check if URF has a free entry and return that free entry index
 
-int traverseURF(URF* urf)
+int traverseURF()
 {
     for(int i = 0; i < URFMaxSize; i++)
     {
@@ -20,7 +44,7 @@ int traverseURF(URF* urf)
     return -1; //No free entry available
 }
 
-int allocate_phy_dest_RAT(URF* urf, RAT* rat, int rd)
+int allocate_phy_dest_RAT(int rd)
 {
     //Check free entry in URF
     int phy_reg = traverseURF(urf);
@@ -37,19 +61,19 @@ int allocate_phy_dest_RAT(URF* urf, RAT* rat, int rd)
     return -1; // Can not allocate new physical register
 }
 
-int renameSrcWithPhyReg(RAT* rat, int rs){
+int renameSrcWithPhyReg(int rs){
     int phy_reg = rat[rs].phy_reg_num; //Read physical register num from RAT
     return phy_reg;
 }
 
-int readSrcFromURF(URF* urf, int phy_reg){
+int readSrcFromURF(int phy_reg){
     if(urf[phy_reg].status){
         return urf[phy_reg].value;
     }
     return -1;
 }
 
-void updateURF(URF* urf, int result, int phy_res, enum FU fu_type){
+void updateURF(int result, int phy_res, enum FU fu_type){
 
     if(fu_type == Int_FU)
     {
@@ -66,6 +90,49 @@ void updateURF(URF* urf, int result, int phy_res, enum FU fu_type){
         urf[phy_res].value = result;
         urf[phy_res].status = 1;
     }
+}
+
+void printURF(){
+    printf("|\tRegister\t|\tValue\t|\tfree\t|\tstatus\n");
+    for (int i = 0; i < URFMaxSize; i++)
+    {
+        char free[10];
+        if(urf[i].free){
+            strcpy(free,"alloc");
+        }
+        else{
+             strcpy(free,"free");
+        }
+
+        char status[10];
+        if(urf[i].status){
+            strcpy(status,"valid");
+        }
+        else{
+             strcpy(status,"invalid");
+        }
+        printf("|\tR[%d]\t|\t%d\t|\t%s\t|\t%s\n", i, urf[i].value,free, status);
+    }
+}
+
+void printRAT(){
+    printf("|\tarchitecture\t|\tphysical\t|\n");
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+       
+        printf("|\tR[%d]\t|\tR[%d]\t|\n", i, rat[i].phy_reg_num);
+    }
+
+}
+
+void printRRAT(){
+    printf("|\tarchitecture\t|\tphysical\t|\n");
+    for (int i = 0; i < RRATMaxSize; i++)
+    {
+       
+        printf("|\tR[%d]\t|\tR[%d]\t|\n", i, rrat[i].phy_reg_after_comit);
+    }
+
 }
 
 

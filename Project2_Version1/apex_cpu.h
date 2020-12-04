@@ -96,12 +96,6 @@ typedef struct APEX_CPU
 
     int stoppedDispatch; //Shweta ::: If we encounter branch instruction then stopped dispatching to Issue Queue
     
-    URF urf[URFMaxSize];
-    RAT rat[RATMaxSize];
-    RRAT rrat[RRATMaxSize];
-    
-    Queue *iq;
-
     /* Pipeline stages */
     CPU_Stage fetch;
     CPU_Stage decode;

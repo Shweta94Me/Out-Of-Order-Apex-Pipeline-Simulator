@@ -508,7 +508,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         //CMP instruction has no destination register
         if (strcmp(cpu->decode.opcode_str, "CMP") != 0 && strcmp(cpu->decode.opcode_str, "HALT") != 0)
         {
-            phy_reg_dest = allocate_phy_dest_RAT(cpu->urf, cpu->rat, cpu->decode.rd);
+            phy_reg_dest = allocate_phy_dest_RAT(cpu->decode.rd);
         }
 
         if (phy_reg_dest != -1)
@@ -522,12 +522,12 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             if (strcmp(cpu->decode.opcode_str, "MOVC") != 0 && strcmp(cpu->decode.opcode_str, "HALT") != 0)
             {
                 //Rename with free physical free register from URF
-                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs1);
-                cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs2);
+                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->decode.rs1);
+                cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->decode.rs2);
 
                 //Set the ready bit for source regsiter
 
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs1_phy_res);
+                val = readSrcFromURF(cpu->decode.rs1_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs1_value = val;
@@ -538,7 +538,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
                     cpu->decode.rs1_ready = 0;
                 }
 
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs2_phy_res);
+                val = readSrcFromURF(cpu->decode.rs2_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs2_value = val;
@@ -575,19 +575,19 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
     else if (fu_type == Mul_FU)
     {
         int phy_reg_dest = 0;
-        phy_reg_dest = allocate_phy_dest_RAT(cpu->urf, cpu->rat, cpu->decode.rd);
+        phy_reg_dest = allocate_phy_dest_RAT(cpu->decode.rd);
         if (phy_reg_dest != -1)
         {
 
             cpu->decode.rd_phy_res = phy_reg_dest;
 
             //Rename with free physical free register from URF
-            cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs1);
-            cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs2);
+            cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->decode.rs1);
+            cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->decode.rs2);
 
             //Set the ready bit for source regsiter
 
-            val = readSrcFromURF(cpu->urf, cpu->decode.rs1_phy_res);
+            val = readSrcFromURF(cpu->decode.rs1_phy_res);
             if (val != -1)
             {
                 cpu->decode.rs1_value = val;
@@ -598,7 +598,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
                 cpu->decode.rs1_ready = 0;
             }
 
-            val = readSrcFromURF(cpu->urf, cpu->decode.rs2_phy_res);
+            val = readSrcFromURF(cpu->decode.rs2_phy_res);
             if (val != -1)
             {
                 cpu->decode.rs2_value = val;
@@ -631,7 +631,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         //CMP instruction has no destination register
         if (strcmp(cpu->decode.opcode_str, "STORE") != 0 && strcmp(cpu->decode.opcode_str, "STR") != 0)
         {
-            phy_reg_dest = allocate_phy_dest_RAT(cpu->urf, cpu->rat, cpu->decode.rd);
+            phy_reg_dest = allocate_phy_dest_RAT(cpu->decode.rd);
         }
 
         if (phy_reg_dest != -1)
@@ -646,8 +646,8 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
                 strcmp(cpu->decode.opcode_str, "STORE") == 0 ||
                 strcmp(cpu->decode.opcode_str, "STR") == 0)
             {
-                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs1);
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs1_phy_res);
+                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->decode.rs1);
+                val = readSrcFromURF(cpu->decode.rs1_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs1_value = val;
@@ -663,8 +663,8 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
                 strcmp(cpu->decode.opcode_str, "STORE") == 0 ||
                 strcmp(cpu->decode.opcode_str, "STR") == 0)
             {
-                cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs2);
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs2_phy_res);
+                cpu->decode.rs2_phy_res = renameSrcWithPhyReg(cpu->decode.rs2);
+                val = readSrcFromURF(cpu->decode.rs2_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs2_value = val;
@@ -682,8 +682,8 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
 
             if (strcmp(cpu->decode.opcode_str, "STR") == 0)
             {
-                cpu->decode.rs3_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs3);
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs3_phy_res);
+                cpu->decode.rs3_phy_res = renameSrcWithPhyReg(cpu->decode.rs3);
+                val = readSrcFromURF(cpu->decode.rs3_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs3_value = val;
@@ -719,7 +719,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         //Only JAL instruction has destionation register
         if (strcmp(cpu->decode.opcode_str, "JAL") == 0)
         {
-            phy_reg_dest = allocate_phy_dest_RAT(cpu->urf, cpu->rat, cpu->decode.rd);
+            phy_reg_dest = allocate_phy_dest_RAT(cpu->decode.rd);
         }
 
         if(phy_reg_dest != -1){
@@ -731,8 +731,8 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             if (strcmp(cpu->decode.opcode_str, "JUMP") == 0 ||
                 strcmp(cpu->decode.opcode_str, "JAL") == 0)
             {
-                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->rat, cpu->decode.rs1);
-                val = readSrcFromURF(cpu->urf, cpu->decode.rs1_phy_res);
+                cpu->decode.rs1_phy_res = renameSrcWithPhyReg(cpu->decode.rs1);
+                val = readSrcFromURF(cpu->decode.rs1_phy_res);
                 if (val != -1)
                 {
                     cpu->decode.rs1_value = val;
@@ -875,7 +875,7 @@ source regsiter as this destination register*/
 void broadcastData(APEX_CPU *cpu, int result, int phy_res, enum FU fu_type)
 {
     //1: Make entry in URF
-    updateURF(cpu->urf, result, phy_res, fu_type);
+    updateURF(result, phy_res, fu_type);
 
     //2: updated IQ entries which has same source regsiters as this destination
     updateIQ(cpu, fu_type);
@@ -1364,24 +1364,13 @@ APEX_cpu_init(const char *filename)
     createQueue();
 
     // Initiliaze URF
-    for (int i = 0; i < URFMaxSize; i++)
-    {
-        cpu->urf[i].free = 0;
-        cpu->urf[i].status = 1;
-        cpu->urf[i].value = 0;
-    }
+    initializeURF();
 
     // Initialize RAT
-    for (int i = 0; i < RATMaxSize; i++)
-    {
-        cpu->rat[i].phy_reg_num = -1;
-    }
+    initializeRAT();
 
     // Initialize RRAT
-    for (int i = 0; i < RATMaxSize; i++)
-    {
-        cpu->rrat[i].phy_reg_after_comit = -1;
-    }
+    initializeRRAT();
 
     //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to 
     // the cpu just try to keep seperate.
