@@ -1425,11 +1425,19 @@ void APEX_cpu_run(APEX_CPU *cpu)
             break;
         }
 
+        //Commit from ROB head and update RRAT with commited architectural register
+        //check ROB head status is valid
+        int phy_rd = ROB_headEntryValid();
+        if(phy_rd != -1)
+        {
+            int rd_arch_idx = ROB_pop();
+            updateRRAT(phy_rd, rd_arch_idx);
+        }
+
         APEX_memory2(cpu);
         APEX_memory1(cpu);
         APEX_jbu2(cpu);
         APEX_jbu1(cpu);
-        issueInstruction(cpu);
         if (cpu->ex_int_fu.has_insn)
         {
             APEX_int_fu(cpu);
@@ -1438,7 +1446,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
         {
             APEX_mul_fu(cpu);
         }
-        
+        issueInstruction(cpu);
         APEX_decode(cpu);
         APEX_fetch(cpu);
 
