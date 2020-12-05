@@ -3,7 +3,7 @@
 
 #include "apex_macros.h"
 
-#define ROB_SIZE 24
+#define ROB_SIZE 64
 
 typedef struct ROB_entry
 {
