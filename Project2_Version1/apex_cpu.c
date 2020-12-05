@@ -1405,7 +1405,7 @@ APEX_memory2(APEX_CPU *cpu)
             cpu->mem2.result_buffer = cpu->data_memory[cpu->mem2.memory_address];
 
             broadcastData(cpu, cpu->mem2.result_buffer, cpu->mem2.rd_phy_res, Mem_FU);
-            //Shweta ::: Update ROB entry for commitment
+            //Shweta ::: No need to update ROB entry
             break;
         }
 
