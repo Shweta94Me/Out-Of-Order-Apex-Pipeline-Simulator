@@ -148,6 +148,15 @@ void printRRAT(){
 
 }
 
+void printArchToPhys(){
+    printf("|\tarchitecture register\t|\tphysical register value\t|\n");
+    for (int i = 0; i < URFMaxSize; i++)
+    {
+       
+        printf("|\tR[%d]\t|\t%d\t|\n", i, urf[rrat[i].phy_reg_after_comit].value);
+    }
+}
+
 
 
 

@@ -47,4 +47,5 @@ void updateRRAT(int phy_rd, int arch_idx);
 void printURF();
 void printRAT();
 void printRRAT();
+void printArchToPhys();
 #endif
