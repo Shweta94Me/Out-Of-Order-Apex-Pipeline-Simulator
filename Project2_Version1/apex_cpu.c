@@ -356,6 +356,44 @@ void issueInstruction(APEX_CPU *cpu)
             //setting flag to 1
             // int_fu_flag = 1;
         }
+
+        if(temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        {
+            set_rob_mready_bit(temp->data.pc);
+            deQueueAnyNode(temp->data.pc);
+        }
+
+        if(temp->data.FU_Type == JBU_FU && !cpu->jbu1.has_insn && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        {
+            cpu->jbu1.pc = temp->data.pc;
+            cpu->jbu1.opcode = temp->data.opcode;
+            cpu->jbu1.fu_type = temp->data.FU_Type;
+            cpu->jbu1.has_insn = 1;
+            cpu->jbu1.imm = temp->data.imm;
+            strcpy(cpu->jbu1.opcode_str, temp->data.opcode_str);
+
+            cpu->jbu1.rd_phy_res = temp->data.phy_rd;
+            cpu->jbu1.rd = temp->data.rd_arch;
+
+            cpu->jbu1.rs1 = temp->data.rs1_arch;
+            cpu->jbu1.rs1_phy_res = temp->data.rs1_tag;
+            cpu->jbu1.rs1_value = temp->data.rs1_value;
+            cpu->jbu1.rs1_ready = temp->data.rs1_ready;
+
+            cpu->jbu1.rs2 = temp->data.rs2_arch;
+            cpu->jbu1.rs2_phy_res = temp->data.rs2_tag;
+            cpu->jbu1.rs2_value = temp->data.rs2_value;
+            cpu->jbu1.rs2_ready = temp->data.rs2_ready;
+
+            cpu->jbu1.rs3 = temp->data.rs3_arch;
+            cpu->jbu1.rs3_phy_res = temp->data.rs3_tag;
+            cpu->jbu1.rs3_value = temp->data.rs3_value;
+            cpu->jbu1.rs3_ready = temp->data.rs3_ready;
+
+            //deleting this node from the q
+            deQueueAnyNode(temp->data.pc);
+        }
+
         temp = temp->next;
     }
 
@@ -373,7 +411,7 @@ void issueInstruction(APEX_CPU *cpu)
     free(temp);
 }
 
-ROB_entry create_ROB_data(APEX_CPU *cpu)
+ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
 {
     ROB_entry entry;
 
@@ -397,12 +435,14 @@ ROB_entry create_ROB_data(APEX_CPU *cpu)
     entry.phy_rd = cpu->decode.rd_phy_res;
     entry.rd_arch = cpu->decode.rd;
 
+    entry.mready = mready;
+
     return entry;
 }
 /*Add entry to ROB*/
-void add_instr_to_ROB(APEX_CPU *cpu)
+void add_instr_to_ROB(APEX_CPU *cpu, int mready)
 {
-    ROB_entry data = create_ROB_data(cpu);
+    ROB_entry data = create_ROB_data(cpu, mready);
     ROB_push(data);
 }
 
@@ -715,12 +755,21 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Shweta :::fu_type
             cpu->decode.fu_type = Mem_FU;
 
-            //Pass all instructions to Issue Queue
-            node_attr data = createData(cpu);
-            enQueue(data);
+            //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue 
+            int mready = 1; //1 - set and 0 - not set
+            if((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) || 
+            (strcmp(cpu->decode.opcode_str, "LDR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
+            (strcmp(cpu->decode.opcode_str, "STORE") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
+            (strcmp(cpu->decode.opcode_str, "STR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready && !cpu->decode.rs3_ready))
+            {
+                mready = 0;
+                //Pass all instructions to Issue Queue
+                node_attr data = createData(cpu);
+                enQueue(data);
+            }
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu);
+            add_instr_to_ROB(cpu, mready);
         }
         else
         {
