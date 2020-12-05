@@ -124,7 +124,7 @@ set_opcode_str(const char *opcode_str)
         return OPCODE_OR;
     }
 
-    if (strcmp(opcode_str, "EX-OR") == 0)
+    if (strcmp(opcode_str, "EXOR") == 0)
         {
             return OPCODE_XOR;
         }
@@ -235,6 +235,7 @@ create_APEX_instruction(APEX_Instruction *ins, char *buffer)
         case OPCODE_AND:
         case OPCODE_OR:
         case OPCODE_XOR:
+        case OPCODE_LDR:
         {
             ins->rd = get_num_from_string(tokens[0]);
             ins->rs1 = get_num_from_string(tokens[1]);
@@ -271,6 +272,45 @@ create_APEX_instruction(APEX_Instruction *ins, char *buffer)
             ins->imm = get_num_from_string(tokens[0]);
             break;
         }
+
+        case OPCODE_ADDL:
+        case OPCODE_SUBL:
+        {
+            ins->rd = get_num_from_string(tokens[0]);
+            ins->rs1 = get_num_from_string(tokens[1]);
+            ins->imm = get_num_from_string(tokens[2]);
+            break;
+        }
+
+        case OPCODE_STR:
+        {
+            ins->rs1 = get_num_from_string(tokens[0]);
+            ins->rs2 = get_num_from_string(tokens[1]);
+            ins->rs3 = get_num_from_string(tokens[2]);
+            break;
+        }
+
+        case OPCODE_CMP:
+        {
+            ins->rs1 = get_num_from_string(tokens[0]);
+            ins->rs2 = get_num_from_string(tokens[1]);
+            break;
+        }
+
+        case OPCODE_JUMP:
+        {
+            ins->rs1 = get_num_from_string(tokens[0]);
+            ins->imm = get_num_from_string(tokens[1]);
+            break;
+        }
+
+        case OPCODE_JAL:
+        {
+            ins->rd = get_num_from_string(tokens[0]);
+            ins->rs1 = get_num_from_string(tokens[1]);
+            ins->imm = get_num_from_string(tokens[2]);
+        }
+
     }
     /* Fill in rest of the instructions accordingly */
 }

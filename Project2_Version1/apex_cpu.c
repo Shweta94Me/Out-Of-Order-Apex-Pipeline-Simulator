@@ -78,8 +78,8 @@ print_instruction(const CPU_Stage *stage)
 
     case OPCODE_STR:
     {
-        printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rs3, stage->rs1,
-               stage->rs2);
+        printf("%s,R%d,R%d,R%d ", stage->opcode_str, stage->rs1, stage->rs2,
+               stage->rs3);
         break;
     }
 
@@ -282,7 +282,7 @@ void issueInstruction(APEX_CPU *cpu)
 		*/
 
         //0 is free 1 is not free
-        if (temp->data.FU_Type == Mul_FU && !cpu->mul_fu_free && temp->data.rs1_ready && temp->data.rs2_ready)
+        if (temp->data.FU_Type == Mul_FU && !cpu->ex_mul_fu.has_insn && temp->data.rs1_ready && temp->data.rs2_ready)
         {
             cpu->mul_fu_free = 1; // making mul fu not free. Also by doing this we ensure only one instruction is sent to int fu , mul fu
             // and ... even if the while loop continues till the end of the q. Early stopping is not possible
@@ -717,9 +717,9 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue
             int mready = 1; //1 - set and 0 - not set
             if ((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) ||
-                (strcmp(cpu->decode.opcode_str, "LDR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
-                (strcmp(cpu->decode.opcode_str, "STORE") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
-                (strcmp(cpu->decode.opcode_str, "STR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready && !cpu->decode.rs3_ready))
+                (strcmp(cpu->decode.opcode_str, "LDR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
+                (strcmp(cpu->decode.opcode_str, "STORE") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
+                (strcmp(cpu->decode.opcode_str, "STR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready || !cpu->decode.rs3_ready)))
             {
                 mready = 0;
                 //Pass all instructions to Issue Queue
@@ -1149,20 +1149,20 @@ APEX_mul_fu(APEX_CPU *cpu)
         /* Execute logic based on instruction type */
         switch (cpu->ex_mul_fu.opcode)
         {
-        case OPCODE_MUL:
-        {
-            cpu->ex_mul_fu.result_buffer = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
+            case OPCODE_MUL:
+            {
+                cpu->ex_mul_fu.result_buffer = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
 
-            cpu->mul_cycles = 0;  //Reset
-            cpu->mul_fu_free = 0; //free mul unit
+                cpu->mul_cycles = 0;  //Reset
+                cpu->mul_fu_free = 0; //free mul unit
 
-            broadcastData(cpu, cpu->ex_mul_fu.result_buffer, cpu->ex_mul_fu.rd_phy_res, Mul_FU); // only when completed 3 cycles
+                broadcastData(cpu, cpu->ex_mul_fu.result_buffer, cpu->ex_mul_fu.rd_phy_res, Mul_FU); // only when completed 3 cycles
 
-            /* Copy data from execute latch to memory latch*/
-            update_ROB(cpu->ex_mul_fu); //Shweta ::: Instead of passing it to memory update ROB entry
+                /* Copy data from execute latch to memory latch*/
+                update_ROB(cpu->ex_mul_fu); //Shweta ::: Instead of passing it to memory update ROB entry
 
-            break;
-        }
+                break;
+            }
         }
 
         cpu->insn_completed++;
@@ -1187,6 +1187,8 @@ APEX_mul_fu(APEX_CPU *cpu)
 static void
 APEX_jbu1(APEX_CPU *cpu)
 {
+    issueInstruction(cpu);
+
     if (cpu->jbu1.has_insn)
     {
         switch (cpu->jbu1.opcode)
@@ -1217,12 +1219,11 @@ APEX_jbu1(APEX_CPU *cpu)
 
                 /* Make sure fetch stage is enabled to start fetching from new PC */
                 cpu->fetch.has_insn = TRUE;
-
-                /*Shweta ::: Open for dispatching*/
-                cpu->stoppedDispatch = 0;
-                cpu->insn_completed++;
-                cpu->jbu1.has_insn = FALSE;
             }
+            /*Shweta ::: Open for dispatching*/
+            cpu->stoppedDispatch = 0;
+            cpu->insn_completed++;
+            cpu->jbu1.has_insn = FALSE;
             break;
         }
 
@@ -1242,12 +1243,11 @@ APEX_jbu1(APEX_CPU *cpu)
 
                 /* Make sure fetch stage is enabled to start fetching from new PC */
                 cpu->fetch.has_insn = TRUE;
-
-                /*Shweta ::: Open for dispatching*/
-                cpu->stoppedDispatch = 0;
-                cpu->insn_completed++;
-                cpu->jbu1.has_insn = FALSE;
             }
+            /*Shweta ::: Open for dispatching*/
+            cpu->stoppedDispatch = 0;
+            cpu->insn_completed++;
+            cpu->jbu1.has_insn = FALSE;
             break;
         }
         }
@@ -1308,7 +1308,7 @@ APEX_jbu2(APEX_CPU *cpu)
 
         if (ENABLE_DEBUG_MESSAGES)
         {
-            print_stage_content("JBU1", &cpu->jbu1);
+            print_stage_content("JBU2", &cpu->jbu2);
         }
     }
 }
@@ -1592,7 +1592,6 @@ void APEX_cpu_run(APEX_CPU *cpu)
         if (cpu->single_step)
         {
             printf("Press any key to advance CPU Clock or <q> to quit:\n");
-            printAll(cpu);
             scanf("%c", &user_prompt_val);
 
             if ((user_prompt_val == 'Q') || (user_prompt_val == 'q'))
@@ -1603,9 +1602,11 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
         cpu->clock++;
     }
+    printAll(cpu);
 }
 
-void printAll(APEX_CPU *cpu){
+void printAll(APEX_CPU *cpu)
+{
     printMemory(cpu);
     printURF();
     printRAT();

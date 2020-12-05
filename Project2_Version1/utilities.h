@@ -4,9 +4,9 @@ Shweta ::: Structure for URF, RAT, R-RAT
 #ifndef _UTILITIES_H_
 #define _UTILITIES_H_
 
-#define URFMaxSize 8       // 48
-#define RATMaxSize 8       // 16
-#define RRATMaxSize 8      // 16
+#define URFMaxSize 48
+#define RATMaxSize 16
+#define RRATMaxSize 16
 
 
 #include "issue_q.h"
