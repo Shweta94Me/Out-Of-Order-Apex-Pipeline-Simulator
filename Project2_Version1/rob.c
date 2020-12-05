@@ -114,12 +114,13 @@ ROB_entry ROB_pop()
 // peek to check if head has mem ins
 int rob_head_peek(){
 
-    if (ROB_is_empty() || !rob->head->entry.status || (!rob->head->entry.mready && (strcmp(rob->head->entry.opcode_str, "LOAD") == 0 ||
-            strcmp(rob->head->entry.opcode_str, "LDR") == 0 ||
-            strcmp(rob->head->entry.opcode_str, "STORE") == 0 ||
-            strcmp(rob->head->entry.opcode_str, "STR") == 0)))
-        return 0;
-    return 1;
+    if (!ROB_is_empty() && rob->head->entry.mready && 
+    (strcmp(rob->head->entry.opcode_str, "LOAD") == 0 ||
+    strcmp(rob->head->entry.opcode_str, "LDR") == 0 ||
+    strcmp(rob->head->entry.opcode_str, "STORE") == 0 ||
+    strcmp(rob->head->entry.opcode_str, "STR") == 0))
+        return 1;
+    return 0;
 }
 
 
