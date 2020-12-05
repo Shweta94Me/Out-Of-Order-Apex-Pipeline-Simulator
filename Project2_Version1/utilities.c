@@ -101,12 +101,20 @@ void freeRegFromURF(int last_commited_phy_reg)
 void updateRRAT(int phy_rd, int arch_idx)
 {
     int last_commited_phy_reg = rrat[arch_idx].phy_reg_after_comit;
-    freeRegFromURF(last_commited_phy_reg);
-    rrat[arch_idx].phy_reg_after_comit = phy_rd; //update with latest commited physical register
+    if(last_commited_phy_reg != -1){
+        freeRegFromURF(last_commited_phy_reg);
+        rrat[arch_idx].phy_reg_after_comit = phy_rd; 
+    }
+    else{
+        rrat[arch_idx].phy_reg_after_comit = phy_rd; 
+        // freeRegFromURF(phy_rd);
+    }
+    //update with latest commited physical register
 }
 
 void printURF(){
-    printf("|\tRegister\t|\tValue\t|\tfree\t|\tstatus\n");
+    printf("\n-----------------URF---------------------\n");
+    // printf("|\tRegister |\tValue |\tfree |\tstatus\n");
     for (int i = 0; i < URFMaxSize; i++)
     {
         char free[10];
@@ -124,36 +132,39 @@ void printURF(){
         else{
              strcpy(status,"invalid");
         }
-        printf("|\tR[%d]\t|\t%d\t|\t%s\t|\t%s\n", i, urf[i].value,free, status);
+        printf("|\tP[%d]\t|\t%d\t|\t%s\t|\t%s\n", i, urf[i].value,free, status);
     }
 }
 
 void printRAT(){
-    printf("|\tarchitecture\t|\tphysical\t|\n");
+    printf("\n-----------------RAT---------------------\n");
+    // printf("|\tarch\t|\tphys\t|\n");
     for (int i = 0; i < RATMaxSize; i++)
     {
        
-        printf("|\tR[%d]\t|\tR[%d]\t|\n", i, rat[i].phy_reg_num);
+        printf("|\tR[%d]\t|\t%d\t|\n", i, rat[i].phy_reg_num);
     }
 
 }
 
 void printRRAT(){
-    printf("|\tarchitecture\t|\tphysical\t|\n");
+    printf("\n-----------------RRAT---------------------\n");
+    // printf("|\tarch\t|\tphys\t|\n");
     for (int i = 0; i < RRATMaxSize; i++)
     {
        
-        printf("|\tR[%d]\t|\tR[%d]\t|\n", i, rrat[i].phy_reg_after_comit);
+        printf("|\tR[%d]\t|\t%d\t|\n", i, rrat[i].phy_reg_after_comit);
     }
 
 }
 
 void printArchToPhys(){
-    printf("|\tarchitecture register\t|\tphysical register value\t|\n");
+    printf("\n-----------------A-Phy---------------------\n");
+    printf("|\tarch-reg\t|\tphy-reg-val\t|\n");
     for (int i = 0; i < RRATMaxSize; i++)
     {
        
-        printf("|\tR[%d]\t|\t%d\t|\n", i, urf[rrat[i].phy_reg_after_comit].value);
+        printf("|\t  R[%d]  \t|\t  %d      \t|\n", i, urf[rrat[i].phy_reg_after_comit].value);
     }
 }
 
