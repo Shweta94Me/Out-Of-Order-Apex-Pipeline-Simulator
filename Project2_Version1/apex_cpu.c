@@ -357,13 +357,13 @@ void issueInstruction(APEX_CPU *cpu)
             // int_fu_flag = 1;
         }
 
-        if(temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        if (temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
             set_rob_mready_bit(temp->data.pc);
             deQueueAnyNode(temp->data.pc);
         }
 
-        if(temp->data.FU_Type == JBU_FU && !cpu->jbu1.has_insn && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        if (temp->data.FU_Type == JBU_FU && !cpu->jbu1.has_insn && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
             cpu->jbu1.pc = temp->data.pc;
             cpu->jbu1.opcode = temp->data.opcode;
@@ -455,38 +455,47 @@ void update_ROB(CPU_Stage cpu_stage)
     forward_to_rob(cpu_stage.pc, cpu_stage.result_buffer);
 }
 
-// push instruction from rob to mem stage if instruction is is mem stage ins like load store ldr str 
+// push instruction from rob to mem stage if instruction is is mem stage ins like load store ldr str
 // and mready bit is set. mready bit is used for mem type ins only and not r2r ins
 
-void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry){
+void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry)
+{
 
-        //if the mem ins like ldr str store load and mready is one lets pop and pass to rob
-        if(entry.rd_arch != -1){
+    //if the mem ins like ldr str store load and mready is one lets pop and pass to rob
+    if (entry.rd_arch != -1)
+    {
 
-            // let pass the rob entry to mem stage 1
+        // let pass the rob entry to mem stage 1
 
-            cpu->mem1.fu_type = Mem_FU;
-            cpu->mem1.has_insn = 1;
-            cpu->mem1.imm = entry.imm;
-            cpu->mem1.opcode = entry.opcode;
-            strcpy(cpu->mem1.opcode_str , entry.opcode_str);
-            cpu->mem1.pc = entry.pc_value;
-            cpu->mem1.rd = entry.rd_arch;
-            cpu->mem1.rd_phy_res = entry.phy_rd;
-            // cpu->mem1.result_buffer
-            cpu->mem1.rs1 = entry.rs1_arch;
-            cpu->mem1.rs1_value = entry.rs1_value;
-            cpu->mem1.rs1_phy_res = entry.rs3_tag;
-            cpu->mem1.rs2 = entry.rs2_arch;
-            cpu->mem1.rs2_value = entry.rs2_value;
-            cpu->mem1.rs2_phy_res = entry.rs2_tag;
-            cpu->mem1.rs3 = entry.rs3_arch;
-            cpu->mem1.rs3_phy_res = entry.rs3_tag;
-            cpu->mem1.rs3_value = entry.rs3_value;
-        
-        }
+        cpu->mem1.fu_type = Mem_FU;
+        cpu->mem1.has_insn = 1;
+        cpu->mem1.imm = entry.imm;
+        cpu->mem1.opcode = entry.opcode;
+        strcpy(cpu->mem1.opcode_str, entry.opcode_str);
+        cpu->mem1.pc = entry.pc_value;
+        cpu->mem1.rd = entry.rd_arch;
+        cpu->mem1.rd_phy_res = entry.phy_rd;
+        // cpu->mem1.result_buffer
+        cpu->mem1.rs1 = entry.rs1_arch;
+        cpu->mem1.rs1_value = entry.rs1_value;
+        cpu->mem1.rs1_phy_res = entry.rs3_tag;
+        cpu->mem1.rs2 = entry.rs2_arch;
+        cpu->mem1.rs2_value = entry.rs2_value;
+        cpu->mem1.rs2_phy_res = entry.rs2_tag;
+        cpu->mem1.rs3 = entry.rs3_arch;
+        cpu->mem1.rs3_phy_res = entry.rs3_tag;
+        cpu->mem1.rs3_value = entry.rs3_value;
+    }
 }
 
+void printMemory(APEX_CPU *cpu)
+{
+    printf("===============STATE OF DATA MEMORY===============\n");
+    for (int i = 0; i < 100; i++)
+    {
+        printf("|\t\tMEM[%d]\t\t|\t\tData Value = %d\t\t|\n", i, cpu->data_memory[i]);
+    }
+}
 /*Utility functions end*/
 
 /*
@@ -646,7 +655,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu,0);
+            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -703,7 +712,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu,0);
+            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -790,12 +799,12 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Shweta :::fu_type
             cpu->decode.fu_type = Mem_FU;
 
-            //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue 
+            //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue
             int mready = 1; //1 - set and 0 - not set
-            if((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) || 
-            (strcmp(cpu->decode.opcode_str, "LDR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
-            (strcmp(cpu->decode.opcode_str, "STORE") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
-            (strcmp(cpu->decode.opcode_str, "STR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready && !cpu->decode.rs3_ready))
+            if ((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) ||
+                (strcmp(cpu->decode.opcode_str, "LDR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
+                (strcmp(cpu->decode.opcode_str, "STORE") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready) ||
+                (strcmp(cpu->decode.opcode_str, "STR") == 0 && !cpu->decode.rs1_ready && !cpu->decode.rs2_ready && !cpu->decode.rs3_ready))
             {
                 mready = 0;
                 //Pass all instructions to Issue Queue
@@ -862,7 +871,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu,0);
+            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -1009,16 +1018,6 @@ APEX_int_fu(APEX_CPU *cpu)
             cpu->ex_int_fu.result_buffer = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.rs2_value;
 
             broadcastData(cpu, cpu->ex_int_fu.result_buffer, cpu->ex_int_fu.rd_phy_res, Int_FU);
-
-            /* Set the zero flag based on the result buffer */
-            if (cpu->ex_int_fu.result_buffer == 0)
-            {
-                cpu->zero_flag = TRUE;
-            }
-            else
-            {
-                cpu->zero_flag = FALSE;
-            }
             break;
         }
 
@@ -1092,6 +1091,16 @@ APEX_int_fu(APEX_CPU *cpu)
             cpu->ex_int_fu.result_buffer = cpu->ex_int_fu.rs1_value - cpu->ex_int_fu.imm;
 
             broadcastData(cpu, cpu->ex_int_fu.result_buffer, cpu->ex_int_fu.rd_phy_res, Int_FU);
+            /* Set the zero flag based on the result buffer */
+            if (cpu->ex_int_fu.result_buffer == 0)
+            {
+                cpu->zero_flag = TRUE;
+            }
+            else
+            {
+                cpu->zero_flag = FALSE;
+            }
+
             break;
         }
 
@@ -1531,14 +1540,18 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
 
         // check if rob head is a mem ins and mready
-        if(rob_head_peek()){
+        if (rob_head_peek())
+        {
             ROB_entry entry = ROB_pop();
-            if(entry.phy_rd != -1){
+            if (entry.phy_rd != -1)
+            {
 
                 // pass the rob popped data to mem stage 1
-                pass_to_mem_stage(cpu,entry);
+                pass_to_mem_stage(cpu, entry);
             }
-        }else{
+        }
+        else
+        {
 
             //Commit from ROB head and update RRAT with commited architectural register
             //check ROB head status is valid
@@ -1546,7 +1559,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
             if (phy_rd != -1)
             {
                 ROB_entry entry = ROB_pop();
-                if(entry.rd_arch != -1)
+                if (entry.rd_arch != -1)
                     updateRRAT(phy_rd, entry.rd_arch);
             }
         }
@@ -1587,6 +1600,8 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
         cpu->clock++;
     }
+
+    printMemory(cpu);
 }
 
 /*
