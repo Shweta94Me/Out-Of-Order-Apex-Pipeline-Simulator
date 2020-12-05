@@ -417,14 +417,17 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
 
     entry.pc_value = cpu->decode.pc;
     strcpy(entry.opcode_str, cpu->decode.opcode_str);
-
+    entry.opcode = cpu->decode.opcode;
     entry.rs1_arch = cpu->decode.rs1;
+    entry.rs1_value = cpu->decode.rs1_value;
     entry.rs1_tag = cpu->decode.rs1_phy_res;
 
     entry.rs2_arch = cpu->decode.rs2;
+    entry.rs2_value = cpu->decode.rs2_value;
     entry.rs2_tag = cpu->decode.rs2_phy_res;
 
     entry.rs3_arch = cpu->decode.rs3;
+    entry.rs3_value = cpu->decode.rs3_value;
     entry.rs3_tag = cpu->decode.rs3_phy_res;
 
     // data.FU_Type = cpu->decode.fu_type;
@@ -450,6 +453,38 @@ void add_instr_to_ROB(APEX_CPU *cpu, int mready)
 void update_ROB(CPU_Stage cpu_stage)
 {
     forward_to_rob(cpu_stage.pc, cpu_stage.result_buffer);
+}
+
+// push instruction from rob to mem stage if instruction is is mem stage ins like load store ldr str 
+// and mready bit is set. mready bit is used for mem type ins only and not r2r ins
+
+void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry){
+
+        //if the mem ins like ldr str store load and mready is one lets pop and pass to rob
+        if(entry.rd_arch != -1){
+
+            // let pass the rob entry to mem stage 1
+
+            cpu->mem1.fu_type = Mem_FU;
+            cpu->mem1.has_insn = 1;
+            cpu->mem1.imm = entry.imm;
+            cpu->mem1.opcode = entry.opcode;
+            strcpy(cpu->mem1.opcode_str , entry.opcode_str);
+            cpu->mem1.pc = entry.pc_value;
+            cpu->mem1.rd = entry.rd_arch;
+            cpu->mem1.rd_phy_res = entry.phy_rd;
+            // cpu->mem1.result_buffer
+            cpu->mem1.rs1 = entry.rs1_arch;
+            cpu->mem1.rs1_value = entry.rs1_value;
+            cpu->mem1.rs1_phy_res = entry.rs3_tag;
+            cpu->mem1.rs2 = entry.rs2_arch;
+            cpu->mem1.rs2_value = entry.rs2_value;
+            cpu->mem1.rs2_phy_res = entry.rs2_tag;
+            cpu->mem1.rs3 = entry.rs3_arch;
+            cpu->mem1.rs3_phy_res = entry.rs3_tag;
+            cpu->mem1.rs3_value = entry.rs3_value;
+        
+        }
 }
 
 /*Utility functions end*/
@@ -611,7 +646,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu);
+            add_instr_to_ROB(cpu,0);
         }
         else
         {
@@ -668,7 +703,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu);
+            add_instr_to_ROB(cpu,0);
         }
         else
         {
@@ -827,7 +862,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             enQueue(data);
 
             // adding instruction to rob
-            add_instr_to_ROB(cpu);
+            add_instr_to_ROB(cpu,0);
         }
         else
         {
@@ -1495,25 +1530,43 @@ void APEX_cpu_run(APEX_CPU *cpu)
             break;
         }
 
-        //Commit from ROB head and update RRAT with commited architectural register
-        //check ROB head status is valid
-        int phy_rd = ROB_headEntryValid();
-        if (phy_rd != -1)
-        {
-            int rd_arch_idx = ROB_pop();
-            updateRRAT(phy_rd, rd_arch_idx);
+        // check if rob head is a mem ins and mready
+        if(rob_head_peek()){
+            ROB_entry entry = ROB_pop();
+            if(entry.phy_rd != -1){
+
+                // pass the rob popped data to mem stage 1
+                pass_to_mem_stage(cpu,entry);
+            }
+        }else{
+
+            //Commit from ROB head and update RRAT with commited architectural register
+            //check ROB head status is valid
+            int phy_rd = ROB_headEntryValid();
+            if (phy_rd != -1)
+            {
+                ROB_entry entry = ROB_pop();
+                if(entry.rd_arch != -1)
+                    updateRRAT(phy_rd, entry.rd_arch);
+            }
         }
 
+        // this is another cycle for memory access - d-cache
         APEX_memory2(cpu);
+
+        // this is one cycle for memory computation
         APEX_memory1(cpu);
+
+        //all ex stage this all in one cycle
         APEX_jbu2(cpu);
         APEX_jbu1(cpu);
-
         APEX_int_fu(cpu);
-
         APEX_mul_fu(cpu);
 
+        // decode stage
         APEX_decode(cpu);
+
+        // fetch stage
         APEX_fetch(cpu);
 
         // print_reg_file(cpu);
@@ -1532,7 +1585,6 @@ void APEX_cpu_run(APEX_CPU *cpu)
                 break;
             }
         }
-
         cpu->clock++;
     }
 }
