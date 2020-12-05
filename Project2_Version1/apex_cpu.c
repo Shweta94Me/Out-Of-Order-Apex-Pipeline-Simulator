@@ -1602,6 +1602,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
     }
 
     printMemory(cpu);
+    printArchToPhys();
 }
 
 /*
