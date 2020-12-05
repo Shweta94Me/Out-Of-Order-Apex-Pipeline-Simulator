@@ -491,94 +491,9 @@ void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry)
 void printMemory(APEX_CPU *cpu)
 {
     printf("===============STATE OF DATA MEMORY===============\n");
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 8; i++)
     {
-        printf("|\t\tMEM[%d]\t\t|\t\tData Value = %d\t\t|\n", i, cpu->data_memory[i]);
-    }
-}
-/*Utility functions end*/
-
-/*
- * Fetch Stage of APEX Pipeline
- *
- * Note: You are free to edit this function according to your implementation
- */
-static void
-APEX_fetch(APEX_CPU *cpu)
-{
-    APEX_Instruction *current_ins;
-
-    if (cpu->fetch.has_insn && !cpu->fetch.stalled)
-    {
-        /* This fetches new branch target instruction from next cycle */
-        if (cpu->fetch_from_next_cycle == TRUE)
-        {
-            cpu->fetch_from_next_cycle = FALSE;
-
-            /* Skip this cycle*/
-            return;
-        }
-
-        /* Store current PC in fetch latch */
-        cpu->fetch.pc = cpu->pc;
-
-        /* Index into code memory using this pc and copy all instruction fields
-         * into fetch latch  */
-        current_ins = &cpu->code_memory[get_code_memory_index_from_pc(cpu->pc)];
-        strcpy(cpu->fetch.opcode_str, current_ins->opcode_str);
-        cpu->fetch.opcode = current_ins->opcode;
-        cpu->fetch.rd = current_ins->rd;
-        cpu->fetch.rs1 = current_ins->rs1;
-        cpu->fetch.rs1_phy_res = -1;
-        cpu->fetch.rs2 = current_ins->rs2;
-        cpu->fetch.rs2_phy_res = -1;
-        cpu->fetch.rs3 = current_ins->rs3;
-        cpu->fetch.rs3_phy_res = -1;
-        cpu->fetch.imm = current_ins->imm;
-
-        /* Update PC for next instruction */
-        cpu->pc += 4;
-
-        if (!cpu->decode.stalled)
-        {
-            /* Copy data from fetch latch to decode latch*/
-            cpu->decode = cpu->fetch;
-        }
-        else
-        {
-            cpu->fetch.stalled = 1;
-        }
-
-        if (ENABLE_DEBUG_MESSAGES)
-        {
-            print_stage_content("Fetch", &cpu->fetch);
-        }
-
-        /* Stop fetching new instructions if HALT is fetched */
-        if (cpu->fetch.opcode == OPCODE_HALT)
-        {
-            cpu->fetch.has_insn = FALSE;
-        }
-    }
-    else
-    {
-        if (!cpu->decode.stalled)
-        {
-            cpu->fetch.stalled = 0;
-
-            /* Copy data from fetch latch to decode latch*/
-            cpu->decode = cpu->fetch;
-        }
-        if (ENABLE_DEBUG_MESSAGES && cpu->fetch.has_insn)
-        {
-            print_stage_content("Fetch", &cpu->fetch);
-        }
-
-        /* Stop fetching new instructions if HALT is fetched */
-        if (cpu->fetch.opcode == OPCODE_HALT)
-        {
-            cpu->fetch.has_insn = FALSE;
-        }
+        printf("|\t\tD[%d]\t\t|\t\tData Value = %d\t\t|\n", i, cpu->data_memory[i]);
     }
 }
 
@@ -880,6 +795,92 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         }
     }
 }
+/*Utility functions end*/
+
+/*
+ * Fetch Stage of APEX Pipeline
+ *
+ * Note: You are free to edit this function according to your implementation
+ */
+static void
+APEX_fetch(APEX_CPU *cpu)
+{
+    APEX_Instruction *current_ins;
+
+    if (cpu->fetch.has_insn && !cpu->fetch.stalled)
+    {
+        /* This fetches new branch target instruction from next cycle */
+        if (cpu->fetch_from_next_cycle == TRUE)
+        {
+            cpu->fetch_from_next_cycle = FALSE;
+
+            /* Skip this cycle*/
+            return;
+        }
+
+        /* Store current PC in fetch latch */
+        cpu->fetch.pc = cpu->pc;
+
+        /* Index into code memory using this pc and copy all instruction fields
+         * into fetch latch  */
+        current_ins = &cpu->code_memory[get_code_memory_index_from_pc(cpu->pc)];
+        strcpy(cpu->fetch.opcode_str, current_ins->opcode_str);
+        cpu->fetch.opcode = current_ins->opcode;
+        cpu->fetch.rd = current_ins->rd;
+        cpu->fetch.rs1 = current_ins->rs1;
+        cpu->fetch.rs1_phy_res = -1;
+        cpu->fetch.rs2 = current_ins->rs2;
+        cpu->fetch.rs2_phy_res = -1;
+        cpu->fetch.rs3 = current_ins->rs3;
+        cpu->fetch.rs3_phy_res = -1;
+        cpu->fetch.imm = current_ins->imm;
+
+        /* Update PC for next instruction */
+        cpu->pc += 4;
+
+        if (!cpu->decode.stalled)
+        {
+            /* Copy data from fetch latch to decode latch*/
+            cpu->decode = cpu->fetch;
+        }
+        else
+        {
+            cpu->fetch.stalled = 1;
+        }
+
+        if (ENABLE_DEBUG_MESSAGES)
+        {
+            print_stage_content("Fetch", &cpu->fetch);
+        }
+
+        /* Stop fetching new instructions if HALT is fetched */
+        if (cpu->fetch.opcode == OPCODE_HALT)
+        {
+            cpu->fetch.has_insn = FALSE;
+        }
+    }
+    else
+    {
+        if (!cpu->decode.stalled)
+        {
+            cpu->fetch.stalled = 0;
+
+            /* Copy data from fetch latch to decode latch*/
+            cpu->decode = cpu->fetch;
+        }
+        if (ENABLE_DEBUG_MESSAGES && cpu->fetch.has_insn)
+        {
+            print_stage_content("Fetch", &cpu->fetch);
+        }
+
+        /* Stop fetching new instructions if HALT is fetched */
+        if (cpu->fetch.opcode == OPCODE_HALT)
+        {
+            cpu->fetch.has_insn = FALSE;
+        }
+    }
+}
+
 /*
  * Decode Stage of APEX Pipeline
  *
@@ -1586,10 +1587,12 @@ void APEX_cpu_run(APEX_CPU *cpu)
 
         /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
         printQueue();
+        printROB();
 
         if (cpu->single_step)
         {
             printf("Press any key to advance CPU Clock or <q> to quit:\n");
+            printAll(cpu);
             scanf("%c", &user_prompt_val);
 
             if ((user_prompt_val == 'Q') || (user_prompt_val == 'q'))
@@ -1600,8 +1603,13 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
         cpu->clock++;
     }
+}
 
+void printAll(APEX_CPU *cpu){
     printMemory(cpu);
+    printURF();
+    printRAT();
+    printRRAT();
     printArchToPhys();
 }
 

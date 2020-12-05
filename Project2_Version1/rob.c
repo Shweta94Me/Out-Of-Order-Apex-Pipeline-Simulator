@@ -159,12 +159,12 @@ void set_rob_mready_bit(int pc){
 void printROB(){
 
     ROB_entry_node* temp = rob->head;
-    printf("\nElements in Circular Queue are: \n");
-    while(!ROB_is_empty() && temp->next){
-        printf("%d<-", temp->entry.pc_value);
+    printf("\nElements in Circular Queue are : ");
+    while(!ROB_is_empty() && temp){
+        printf("%d->", temp->entry.pc_value);
         temp = temp->next;
     }
-    printf("%d<-\n", temp->entry.pc_value);
+    printf("\n");
 }
 
 // //    Unit test code for rob

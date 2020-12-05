@@ -122,7 +122,6 @@ void printQueue()
 		printf("Issue Queue is Empty. \n");
 	}
 	
-	
 }
 
 // // Unit test code for Issue q 
