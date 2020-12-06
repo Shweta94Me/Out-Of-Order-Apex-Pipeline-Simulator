@@ -166,6 +166,7 @@ node_attr createData(APEX_CPU *cpu)
     data.pc = cpu->decode.pc;
     strcpy(data.opcode_str, cpu->decode.opcode_str);
     data.opcode = cpu->decode.opcode;
+
     data.rs1_arch = cpu->decode.rs1;
     data.rs1_tag = cpu->decode.rs1_phy_res;
     data.rs1_ready = cpu->decode.rs1_ready;
@@ -269,20 +270,22 @@ void issueInstruction(APEX_CPU *cpu)
 {
 
     struct node *temp = iq->front;
+    struct node *prev = NULL;
 
     // int int_fu_flag = 0; // using this flag to know if we sent any instruction in int fu
     // int mul_fu_flag = 0; // using thus flag to know if we sent any instruction in mul fu
 
-    while (temp && !isQueueEmpty())
+    while (temp != NULL && !isQueueEmpty())
     {
 
+        int nodeDeleted = 0;
         /* suppose we have mul instruction at front of the q and mul fu is free then we issue mul instruction to the mul fu
 		but in the same clock cycle we will try to issue instruction that uses int fu if condition to dispatch is satisfied. 
 		By this way we can achiveve parallelism in function unit. thats why seperate if instead of if else
 		*/
 
         //0 is free 1 is not free
-        if (temp->data.FU_Type == Mul_FU && !cpu->ex_mul_fu.has_insn && temp->data.rs1_ready && temp->data.rs2_ready)
+        if (temp != NULL && temp->data.FU_Type == Mul_FU && !cpu->ex_mul_fu.has_insn && temp->data.rs1_ready && temp->data.rs2_ready)
         {
             cpu->mul_fu_free = 1; // making mul fu not free. Also by doing this we ensure only one instruction is sent to int fu , mul fu
             // and ... even if the while loop continues till the end of the q. Early stopping is not possible
@@ -313,14 +316,48 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->ex_mul_fu.rs3_value = temp->data.rs3_value;
             cpu->ex_mul_fu.rs3_ready = temp->data.rs3_ready;
 
-            //deleting this node from the q
-            deQueueAnyNode(temp->data.pc);
-
-            //setting flag to 1
-            // mul_fu_flag = 1;
+            // delete node
+            if (temp->next == NULL)
+            {
+                if (prev == NULL)
+                {
+                    //Only one node
+                    iq->front = NULL;
+                    iq->rear = NULL;
+                    // free(temp);
+                    temp = NULL;
+                }
+                else
+                {
+                    //last Node
+                    prev->next = temp->next;
+                    // free(temp);
+                    temp = NULL;
+                    iq->rear = prev;
+                }
+            }
+            else if (temp->next != NULL)
+            {
+                if (prev == NULL)
+                {
+                    //first node
+                    struct node *temp1 = temp->next;
+                    temp->data = temp1->data;
+                    temp->next = temp1->next;
+                    free(temp1);
+                }
+                else
+                {
+                    prev->next = temp->next;
+                    free(temp);
+                    temp = prev->next;
+                }
+            }
+            iq->sizeOfQueue--;
+            nodeDeleted = 1;
         }
 
-        if (temp->data.FU_Type == Int_FU && !cpu->int_fu_free && temp->data.rs1_ready && temp->data.rs2_ready)
+        if (temp != NULL && temp->data.FU_Type == Int_FU && !cpu->ex_int_fu.has_insn && temp->data.rs1_ready && temp->data.rs2_ready)
         {
             cpu->int_fu_free = 1; // making int fu not free. Also by doing this we ensure only one instruction is sent to int fu , mul fu
             // and ... even if the while loop continues till the end of the q. Early stopping is not possible
@@ -351,19 +388,93 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->ex_int_fu.rs3_value = temp->data.rs3_value;
             cpu->ex_int_fu.rs3_ready = temp->data.rs3_ready;
 
-            //deleting this node from the q
-            deQueueAnyNode(temp->data.pc);
-            //setting flag to 1
-            // int_fu_flag = 1;
+            // delete node
+            if (temp->next == NULL)
+            {
+                if (prev == NULL)
+                {
+                    //Only one node
+                    iq->front = NULL;
+                    iq->rear = NULL;
+                    // free(temp);
+                    temp = NULL;
+                }
+                else
+                {
+                    //last Node
+                    prev->next = temp->next;
+                    // free(temp);
+                    temp = NULL;
+                    iq->rear = prev;
+                }
+            }
+            else if (temp->next != NULL)
+            {
+                if (prev == NULL)
+                {
+                    //first node
+                    struct node *temp1 = temp->next;
+                    temp->data = temp1->data;
+                    temp->next = temp1->next;
+                    free(temp1);
+                }
+                else
+                {
+                    prev->next = temp->next;
+                    free(temp);
+                    temp = prev->next;
+                }
+            }
+            iq->sizeOfQueue--;
+            nodeDeleted = 1;
         }
 
-        if (temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        if (temp != NULL && temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
             set_rob_mready_bit(temp->data.pc);
-            deQueueAnyNode(temp->data.pc);
+
+            // delete node
+            if (temp->next == NULL)
+            {
+                if (prev == NULL)
+                {
+                    //Only one node
+                    iq->front = NULL;
+                    iq->rear = NULL;
+                    // free(temp);
+                    temp = NULL;
+                }
+                else
+                {
+                    //last Node
+                    prev->next = temp->next;
+                    // free(temp);
+                    temp = NULL;
+                    iq->rear = prev;
+                }
+            }
+            else if (temp->next != NULL)
+            {
+                if (prev == NULL)
+                {
+                    //first node
+                    struct node *temp1 = temp->next;
+                    temp->data = temp1->data;
+                    temp->next = temp1->next;
+                    free(temp1);
+                }
+                else
+                {
+                    prev->next = temp->next;
+                    free(temp);
+                    temp = prev->next;
+                }
+            }
+            iq->sizeOfQueue--;
+            nodeDeleted = 1;
         }
 
-        if (temp->data.FU_Type == JBU_FU && !cpu->jbu1.has_insn && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
+        if (temp != NULL && temp->data.FU_Type == JBU_FU && !cpu->jbu1.has_insn && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
             cpu->jbu1.pc = temp->data.pc;
             cpu->jbu1.opcode = temp->data.opcode;
@@ -390,11 +501,59 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->jbu1.rs3_value = temp->data.rs3_value;
             cpu->jbu1.rs3_ready = temp->data.rs3_ready;
 
-            //deleting this node from the q
-            deQueueAnyNode(temp->data.pc);
+            // delete node
+            if (temp->next == NULL)
+            {
+                if (prev == NULL)
+                {
+                    //Only one node
+                    iq->front = NULL;
+                    iq->rear = NULL;
+                    // free(temp);
+                    temp = NULL;
+                }
+                else
+                {
+                    //last Node
+                    prev->next = temp->next;
+                    // free(temp);
+                    temp = NULL;
+                    iq->rear = prev;
+                }
+            }
+            else if (temp->next != NULL)
+            {
+                if (prev == NULL)
+                {
+                    //first node
+                    struct node *temp1 = temp->next;
+                    temp->data = temp1->data;
+                    temp->next = temp1->next;
+                    free(temp1);
+                }
+                else
+                {
+                    prev->next = temp->next;
+                    free(temp);
+                    temp = prev->next;
+                }
+            }
+            iq->sizeOfQueue--;
+            nodeDeleted = 1;
         }
 
-        temp = temp->next;
+        if (!nodeDeleted)
+        {
+            if (!isQueueEmpty())
+            {
+                prev = temp;
+                temp = temp->next;
+            }
+            else
+            {
+                temp = NULL;
+            }
+        }
     }
 
     //using the above flag to ensure has instruction is made 0 if data is not pushed from iq to fu
@@ -418,6 +577,7 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
     entry.pc_value = cpu->decode.pc;
     strcpy(entry.opcode_str, cpu->decode.opcode_str);
     entry.opcode = cpu->decode.opcode;
+
     entry.rs1_arch = cpu->decode.rs1;
     entry.rs1_value = cpu->decode.rs1_value;
     entry.rs1_tag = cpu->decode.rs1_phy_res;
@@ -433,7 +593,7 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
     // data.FU_Type = cpu->decode.fu_type;
 
     entry.imm = cpu->decode.imm;
-    entry.status = 1;
+    entry.status = 0;
 
     entry.phy_rd = cpu->decode.rd_phy_res;
     entry.rd_arch = cpu->decode.rd;
@@ -462,30 +622,34 @@ void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry)
 {
 
     //if the mem ins like ldr str store load and mready is one lets pop and pass to rob
-    if (entry.rd_arch != -1)
-    {
 
-        // let pass the rob entry to mem stage 1
+    // let pass the rob entry to mem stage 1
 
-        cpu->mem1.fu_type = Mem_FU;
-        cpu->mem1.has_insn = 1;
-        cpu->mem1.imm = entry.imm;
-        cpu->mem1.opcode = entry.opcode;
-        strcpy(cpu->mem1.opcode_str, entry.opcode_str);
-        cpu->mem1.pc = entry.pc_value;
-        cpu->mem1.rd = entry.rd_arch;
-        cpu->mem1.rd_phy_res = entry.phy_rd;
-        // cpu->mem1.result_buffer
-        cpu->mem1.rs1 = entry.rs1_arch;
-        cpu->mem1.rs1_value = entry.rs1_value;
-        cpu->mem1.rs1_phy_res = entry.rs3_tag;
-        cpu->mem1.rs2 = entry.rs2_arch;
-        cpu->mem1.rs2_value = entry.rs2_value;
-        cpu->mem1.rs2_phy_res = entry.rs2_tag;
-        cpu->mem1.rs3 = entry.rs3_arch;
-        cpu->mem1.rs3_phy_res = entry.rs3_tag;
-        cpu->mem1.rs3_value = entry.rs3_value;
-    }
+    cpu->mem1.fu_type = Mem_FU;
+    cpu->mem1.has_insn = 1;
+    cpu->mem1.imm = entry.imm;
+    cpu->mem1.opcode = entry.opcode;
+    strcpy(cpu->mem1.opcode_str, entry.opcode_str);
+    cpu->mem1.pc = entry.pc_value;
+
+    cpu->mem1.rd = entry.rd_arch;
+    cpu->mem1.rd_phy_res = entry.phy_rd;
+
+    // cpu->mem1.result_buffer
+    cpu->mem1.rs1 = entry.rs1_arch;
+    cpu->mem1.rs1_value = entry.rs1_value;
+    cpu->mem1.rs1_phy_res = entry.rs1_tag;
+    cpu->mem1.rs1_ready = 1; //Shweta ::: remove if not working properly
+
+    cpu->mem1.rs2 = entry.rs2_arch;
+    cpu->mem1.rs2_value = entry.rs2_value;
+    cpu->mem1.rs2_phy_res = entry.rs2_tag;
+    cpu->mem1.rs2_ready = 1;
+
+    cpu->mem1.rs3 = entry.rs3_arch;
+    cpu->mem1.rs3_phy_res = entry.rs3_tag;
+    cpu->mem1.rs3_value = entry.rs3_value;
+    cpu->mem1.rs3_ready = 1;
 }
 
 void printMemory(APEX_CPU *cpu)
@@ -891,84 +1055,85 @@ APEX_decode(APEX_CPU *cpu)
 {
     if (cpu->decode.has_insn)
     {
-        if (!isQueueFull() && !cpu->stoppedDispatch && !ROB_is_full())
+        if (!isQueueFull() && !cpu->stoppedDispatch && !ROB_is_full() && !cpu->decode.stalled)
         {
             /* Read operands from register file based on the instruction type */
             switch (cpu->decode.opcode)
             {
-            case OPCODE_ADD:
-            case OPCODE_SUB:
-            case OPCODE_AND:
-            case OPCODE_OR:
-            case OPCODE_XOR:
-            case OPCODE_MOVC:
-            case OPCODE_ADDL:
-            case OPCODE_SUBL:
-            case OPCODE_CMP:
-            {
-                dispatch_instr_to_IQ(cpu, Int_FU);
-
-                if (!cpu->decode.stalled)
+                case OPCODE_ADD:
+                case OPCODE_SUB:
+                case OPCODE_AND:
+                case OPCODE_OR:
+                case OPCODE_XOR:
+                case OPCODE_MOVC:
+                case OPCODE_ADDL:
+                case OPCODE_SUBL:
+                case OPCODE_CMP:
                 {
+                    dispatch_instr_to_IQ(cpu, Int_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->ex_int_fu = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_LOAD:
+                case OPCODE_LDR:
+                case OPCODE_STORE:
+                case OPCODE_STR:
+                {
+                    dispatch_instr_to_IQ(cpu, Mem_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->mem1 = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_MUL:
+                {
+                    dispatch_instr_to_IQ(cpu, Mul_FU);
+
+                    if (!cpu->decode.stalled)
+                    {
+                        /* Copy data from decode latch to execute latch*/
+                        // cpu->ex_mul_fu = cpu->decode;
+                        cpu->decode.has_insn = FALSE;
+                    }
+                    break;
+                }
+
+                case OPCODE_HALT:
+                {
+                    dispatch_instr_to_IQ(cpu, Int_FU);
                     /* Copy data from decode latch to execute latch*/
                     // cpu->ex_int_fu = cpu->decode;
-                    cpu->decode.has_insn = FALSE;
+                    if(!cpu->decode.stalled)
+                        cpu->decode.has_insn = FALSE;
+                    break;
                 }
-                break;
-            }
 
-            case OPCODE_LOAD:
-            case OPCODE_LDR:
-            case OPCODE_STORE:
-            case OPCODE_STR:
-            {
-                dispatch_instr_to_IQ(cpu, Mem_FU);
-
-                if (!cpu->decode.stalled)
+                case OPCODE_BZ:
+                case OPCODE_BNZ:
+                case OPCODE_JAL:
+                case OPCODE_JUMP:
                 {
-                    /* Copy data from decode latch to execute latch*/
-                    // cpu->mem1 = cpu->decode;
-                    cpu->decode.has_insn = FALSE;
+                    dispatch_instr_to_IQ(cpu, JBU_FU);
+                    if (!cpu->decode.stalled)
+                    {
+                        ///Create we are going to stopped dispatching
+                        cpu->stoppedDispatch = 1;
+                        cpu->decode.has_insn = FALSE; //As we have pushed branch instruction to Issue Queue clear the decode stage
+                    }
+                    break;
                 }
-                break;
-            }
-
-            case OPCODE_MUL:
-            {
-                dispatch_instr_to_IQ(cpu, Mul_FU);
-
-                if (!cpu->decode.stalled)
-                {
-                    /* Copy data from decode latch to execute latch*/
-                    // cpu->ex_mul_fu = cpu->decode;
-                    cpu->decode.has_insn = FALSE;
-                }
-                break;
-            }
-
-            case OPCODE_HALT:
-            {
-                dispatch_instr_to_IQ(cpu, Int_FU);
-                /* Copy data from decode latch to execute latch*/
-                // cpu->ex_int_fu = cpu->decode;
-                cpu->decode.has_insn = FALSE;
-                break;
-            }
-
-            case OPCODE_BZ:
-            case OPCODE_BNZ:
-            case OPCODE_JAL:
-            case OPCODE_JUMP:
-            {
-                dispatch_instr_to_IQ(cpu, JBU_FU);
-                if (!cpu->decode.stalled)
-                {
-                    ///Create we are going to stopped dispatching
-                    cpu->stoppedDispatch = 1;
-                    cpu->decode.has_insn = FALSE; //As we have pushed branch instruction to Issue Queue clear the decode stage
-                }
-                break;
-            }
             }
 
             if (ENABLE_DEBUG_MESSAGES)
@@ -993,7 +1158,7 @@ source regsiter as this destination register*/
 void broadcastData(APEX_CPU *cpu, int result, int phy_res, enum FU fu_type)
 {
     //1: Make entry in URF
-    updateURF(result, phy_res, fu_type);
+    updateURF(result, phy_res);
 
     //2: updated IQ entries which has same source regsiters as this destination
     updateIQ(cpu, fu_type);
@@ -1149,20 +1314,20 @@ APEX_mul_fu(APEX_CPU *cpu)
         /* Execute logic based on instruction type */
         switch (cpu->ex_mul_fu.opcode)
         {
-            case OPCODE_MUL:
-            {
-                cpu->ex_mul_fu.result_buffer = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
+        case OPCODE_MUL:
+        {
+            cpu->ex_mul_fu.result_buffer = cpu->ex_mul_fu.rs1_value * cpu->ex_mul_fu.rs2_value;
 
-                cpu->mul_cycles = 0;  //Reset
-                cpu->mul_fu_free = 0; //free mul unit
+            cpu->mul_cycles = 0;  //Reset
+            cpu->mul_fu_free = 0; //free mul unit
 
-                broadcastData(cpu, cpu->ex_mul_fu.result_buffer, cpu->ex_mul_fu.rd_phy_res, Mul_FU); // only when completed 3 cycles
+            broadcastData(cpu, cpu->ex_mul_fu.result_buffer, cpu->ex_mul_fu.rd_phy_res, Mul_FU); // only when completed 3 cycles
 
-                /* Copy data from execute latch to memory latch*/
-                update_ROB(cpu->ex_mul_fu); //Shweta ::: Instead of passing it to memory update ROB entry
+            /* Copy data from execute latch to memory latch*/
+            update_ROB(cpu->ex_mul_fu); //Shweta ::: Instead of passing it to memory update ROB entry
 
-                break;
-            }
+            break;
+        }
         }
 
         cpu->insn_completed++;
@@ -1221,7 +1386,9 @@ APEX_jbu1(APEX_CPU *cpu)
                 cpu->fetch.has_insn = TRUE;
             }
             /*Shweta ::: Open for dispatching*/
+            update_ROB(cpu->jbu1);
             cpu->stoppedDispatch = 0;
+            cpu->decode.stalled = 0;
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1245,7 +1412,9 @@ APEX_jbu1(APEX_CPU *cpu)
                 cpu->fetch.has_insn = TRUE;
             }
             /*Shweta ::: Open for dispatching*/
+            update_ROB(cpu->jbu1);
             cpu->stoppedDispatch = 0;
+            cpu->decode.stalled = 0;
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1262,15 +1431,15 @@ APEX_jbu1(APEX_CPU *cpu)
 static void
 APEX_jbu2(APEX_CPU *cpu)
 {
-    if (cpu->jbu1.has_insn)
+    if (cpu->jbu2.has_insn)
     {
-        switch (cpu->jbu1.opcode)
+        switch (cpu->jbu2.opcode)
         {
         case OPCODE_JUMP:
         {
 
             /*Shweta ::: Calculate the new PC and send it to fetch unit*/
-            cpu->pc = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.imm;
+            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
 
             cpu->fetch_from_next_cycle = TRUE;
 
@@ -1285,11 +1454,11 @@ APEX_jbu2(APEX_CPU *cpu)
 
         case OPCODE_JAL:
         {
-            cpu->ex_int_fu.result_buffer = cpu->pc + 4;
-            cpu->ex_int_fu.pc = cpu->ex_int_fu.rs1_value + cpu->ex_int_fu.imm;
+            cpu->jbu2.result_buffer = cpu->pc + 4;
+            cpu->jbu2.pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
 
             /* Since we are using reverse callbacks for pipeline stages, 
-                        * this will prevent the new instruction from being fetched in the current cycle*/
+                            * this will prevent the new instruction from being fetched in the current cycle*/
             cpu->fetch_from_next_cycle = TRUE;
 
             /* Flush previous stages */
@@ -1302,6 +1471,7 @@ APEX_jbu2(APEX_CPU *cpu)
 
         /*Shweta ::: Open for dispatching*/
         cpu->stoppedDispatch = 0;
+        cpu->decode.stalled = 0;
         update_ROB(cpu->jbu2);
         cpu->insn_completed++;
         cpu->jbu2.has_insn = FALSE;
@@ -1429,7 +1599,7 @@ APEX_memory2(APEX_CPU *cpu)
         }
 
         cpu->insn_completed++;
-        cpu->mem1.has_insn = FALSE;
+        cpu->mem2.has_insn = FALSE;
 
         if (ENABLE_DEBUG_MESSAGES)
         {
@@ -1532,8 +1702,8 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("--------------------------------------------\n");
         }
 
-        /*Shweta ::: Stop excutation once reached code_memory_size*/
-        if (cpu->insn_completed == cpu->code_memory_size)
+        
+        if (cpu->clock)
         {
             /* Halt in writeback stage */
             printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
@@ -1541,10 +1711,10 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
 
         // check if rob head is a mem ins and mready
-        if (rob_head_peek())
+        if (rob_head_peek() && !cpu->mem1.has_insn)
         {
             ROB_entry entry = ROB_pop();
-            if (entry.phy_rd != -1)
+            if (entry.status != -1)
             {
 
                 // pass the rob popped data to mem stage 1
@@ -1553,14 +1723,13 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
         else
         {
-
             //Commit from ROB head and update RRAT with commited architectural register
             //check ROB head status is valid
-            int phy_rd = ROB_headEntryValid();
+            int phy_rd = ROB_headEntryValid(); ///return valid destination physical register number for those instruction for which dest exist otherwise returns -1
             if (phy_rd != -1)
             {
                 ROB_entry entry = ROB_pop();
-                if (entry.rd_arch != -1)
+                if (entry.status != -1 && entry.rd_arch != -1)
                     updateRRAT(phy_rd, entry.rd_arch);
             }
         }
@@ -1577,6 +1746,10 @@ void APEX_cpu_run(APEX_CPU *cpu)
         APEX_int_fu(cpu);
         APEX_mul_fu(cpu);
 
+        if(!cpu->decode.stalled)
+            printf("Decode is not stalled\n");
+        else
+        printf("Decode is stalled\n");
         // decode stage
         APEX_decode(cpu);
 

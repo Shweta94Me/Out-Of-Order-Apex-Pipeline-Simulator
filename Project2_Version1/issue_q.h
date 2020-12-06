@@ -18,7 +18,7 @@ enum FU{
 };
 
 typedef struct node_attr{
-    int val;
+    
     int pc;
     char opcode_str[128];
 
@@ -84,6 +84,7 @@ void enQueue(node_attr data);
 
 // delete the entry from q based on program counter
 void deQueueAnyNode(int val);
+
 #endif
 
 

@@ -62,9 +62,20 @@ void ROB_push(ROB_entry entry)
 
 }
 
+// this function is dedicate to only to ins with destination register and not memory ins
 int ROB_headEntryValid(){
 
-    if (!ROB_is_empty() && rob->head->entry.status)
+    if (!ROB_is_empty() && rob->head->entry.status && 
+    (strcmp(rob->head->entry.opcode_str, "LOAD") != 0 ||   
+    strcmp(rob->head->entry.opcode_str, "LDR") != 0 ||
+    strcmp(rob->head->entry.opcode_str, "STORE") != 0 ||
+    strcmp(rob->head->entry.opcode_str, "STR") != 0 || 
+    strcmp(rob->head->entry.opcode_str, "CMP") != 0 ||  
+    strcmp(rob->head->entry.opcode_str, "BZ") != 0  || 
+    strcmp(rob->head->entry.opcode_str, "BNZ") != 0 || 
+    strcmp(rob->head->entry.opcode_str, "JUMP") != 0 ||
+    strcmp(rob->head->entry.opcode_str, "HALT") != 0 
+    ))
         return rob->head->entry.phy_rd; 
     else
         return -1;
@@ -75,7 +86,8 @@ ROB_entry ROB_pop()
     ROB_entry ret_entry;
     if (ROB_is_empty() || !rob->head->entry.status)
     {
-        ret_entry.rd_arch = -1;
+        //ret_entry.rd_arch = -1; //Instruction with no destionation register
+        ret_entry.status = -1;
         return ret_entry;
     }
         
@@ -83,23 +95,30 @@ ROB_entry ROB_pop()
     // printf("Val -> %d \n ", node->entry.pc_value);
     // ROB_update_RF(node->entry);
 
-    ret_entry.ar_address = node->entry.ar_address;
     ret_entry.imm = node->entry.imm;
     ret_entry.mready = node->entry.mready;
     ret_entry.opcode= node->entry.opcode;
     strcpy(ret_entry.opcode_str , node->entry.opcode_str);
     ret_entry.pc_value = node->entry.pc_value;
+
     ret_entry.phy_rd = node->entry.phy_rd;
     ret_entry.rd_arch = node->entry.rd_arch;
+
     ret_entry.result = node->entry.result;
+
     ret_entry.rs1_arch = node->entry.rs1_arch;
     ret_entry.rs1_tag = node->entry.rs1_tag;
+    ret_entry.rs1_value = node->entry.rs1_value;
+
     ret_entry.rs2_arch = node->entry.rs2_arch;
     ret_entry.rs2_tag = node->entry.rs2_tag;
+    ret_entry.rs2_value = node->entry.rs2_value;
+
     ret_entry.rs3_arch = node->entry.rs3_arch;
     ret_entry.rs3_tag = node->entry.rs3_tag;
+    ret_entry.rs3_value = node->entry.rs3_value;
+
     ret_entry.status = node->entry.status;
-    ret_entry.sval_valid = node->entry.sval_valid;
 
     rob->head = rob->head->next;
     free(node);
@@ -114,7 +133,7 @@ ROB_entry ROB_pop()
 // peek to check if head has mem ins
 int rob_head_peek(){
 
-    if (!ROB_is_empty() && rob->head->entry.mready && 
+    if (!ROB_is_empty() && rob->head->entry.mready && rob->head->entry.status &&
     (strcmp(rob->head->entry.opcode_str, "LOAD") == 0 ||
     strcmp(rob->head->entry.opcode_str, "LDR") == 0 ||
     strcmp(rob->head->entry.opcode_str, "STORE") == 0 ||
@@ -150,6 +169,7 @@ void set_rob_mready_bit(int pc){
         if (pc == node->entry.pc_value)
         {
             node->entry.mready = 1;
+            node->entry.status = 1;
             return;
         }
         node = node->next;
