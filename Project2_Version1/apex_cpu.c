@@ -1467,6 +1467,13 @@ APEX_jbu2(APEX_CPU *cpu)
         {
         case OPCODE_JUMP:
         {
+            int reg_tag = jal_peek(jalstk);
+            if(reg_tag != INT_MIN && reg_tag == cpu->jbu1.rs1){
+                int reg_val = jal_pop(&jalstk);
+                if(reg_val != INT_MIN){
+                    cpu->jbu2.rs1_value = reg_val;
+                }   
+            }
 
             /*Shweta ::: Calculate the new PC and send it to fetch unit*/
             cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
@@ -1485,7 +1492,12 @@ APEX_jbu2(APEX_CPU *cpu)
         case OPCODE_JAL:
         {
             cpu->jbu2.result_buffer = cpu->pc + 4;
-            cpu->jbu2.pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+
+            JALStackEntry entry;
+            entry.reg_tag = cpu->jbu2.rs1;
+            entry.val = cpu->jbu2.result_buffer;
+            jal_push(&jalstk, entry);
 
             /* Since we are using reverse callbacks for pipeline stages, 
                             * this will prevent the new instruction from being fetched in the current cycle*/
@@ -1733,6 +1745,9 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
 
     // Initialize RRAT
     initializeRRAT();
+
+    // Initialize JalStack
+    jalstk = NULL;
 
     //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to
     // the cpu just try to keep seperate.

@@ -8,11 +8,12 @@
  */
 #ifndef _APEX_CPU_H_
 #define _APEX_CPU_H_
-
+#include <limits.h>
 #include "apex_macros.h"
 #include "issue_q.h"
 #include "utilities.h"
 #include "rob.h"
+
 
 /* Format of an APEX instruction  */
 typedef struct APEX_Instruction

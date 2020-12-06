@@ -3,6 +3,8 @@ Shweta ::: Implementation of URF, RAT, R-RAT
 */
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
+#include <stdlib.h>
 #include "utilities.h"
 
 void initializeURF(){
@@ -27,7 +29,6 @@ void initializeRRAT(){
         rrat[i].phy_reg_after_comit = -1;
     }
 }
-
 
 //Check if URF has a free entry and return that free entry index
 
@@ -156,6 +157,112 @@ void printArchToPhys(){
         printf("|\t  R[%d]  \t|\t  %d      \t|\n", i, urf[rrat[i].phy_reg_after_comit].value);
     }
 }
+
+
+/////////////////////// JAL Stack Start /////////////////////////
+
+/*
+The JAL instruction is used to implement a function call and saves the return address in the destination
+register named in the instruction. As an example, the instruction:
+JAL R2, R5, #32
+Calls the function whose first instruction is at the memory address obtained by adding the contents of R5
+with literal 32. If the memory address of the JAL instruction is 64, the instruction following the JAL has
+the address 68 (= 64+4), and this is saved as the return address in R2. A return from the function called in
+this case can be implemented by the instruction:
+JUMP R2, #0
+
+This part is very imp for JAL when R2 is edited and we try to return back to R2
+
+This assumes that R2 is not altered by the called function and anything else it calls. If R2 is used in the
+called function, the called function must save it on a stack in memory and restore it to R2 before executing
+the JUMP R2, #20 instruction to return to the caller’s code.
+*/
+ 
+StackNode* stackNewNode(JALStackEntry data)
+{
+    StackNode* stackNode = (StackNode*)malloc(sizeof(StackNode));
+    stackNode->data = data;
+    stackNode->next = NULL;
+    return stackNode;
+}
+ 
+int isEmpty(struct StackNode* root)
+{
+    return !root;
+}
+ 
+void jal_push(StackNode** root, JALStackEntry data)
+{
+    printf("start");
+    StackNode* stackNode = stackNewNode(data);
+    stackNode->next = *root;
+    *root = stackNode;
+    printf("%d pushed to stack\n", data.val);
+    printf("end");
+
+}
+ 
+int jal_pop(StackNode** root)
+{
+    if (isEmpty(*root))
+        return INT_MIN;
+    StackNode* temp = *root;
+    *root = (*root)->next;
+    JALStackEntry popped = temp->data;
+    free(temp);
+ 
+    return popped.val;
+}
+ 
+int jal_peek(StackNode* root)
+{
+    if (isEmpty(root))
+        return INT_MIN;
+    return root->data.reg_tag;
+}
+
+
+// // unit test code for stack usage of test code is  same as rob and issueq
+// int main()
+// {
+//     struct StackNode* root = NULL;
+
+//     JALStackEntry entry;
+//     entry.val = 100;
+//     entry.reg_tag = 2;
+//     jal_push(&root, entry);
+
+//     entry.val = 200;
+//     jal_push(&root, entry);
+
+//     entry.val = 300;
+//     jal_push(&root, entry);
+ 
+//     printf("%d popped from stack\n", jal_pop(&root));
+//     jal_pop(&root);
+//     jal_pop(&root);
+//     jal_pop(&root);
+//     jal_pop(&root);
+//     jal_pop(&root);
+
+//     entry.val = 100;
+//     jal_push(&root, entry);
+
+//     entry.val = 200;
+//     jal_push(&root, entry);
+
+//     entry.val = 300;
+//     jal_push(&root, entry);
+ 
+//     printf("Top element is %d\n", jal_peek(root));
+ 
+//     return 0;
+// }
+
+
+/////////////////////// JAL Stack End ///////////////////////////
+
+
 
 
 

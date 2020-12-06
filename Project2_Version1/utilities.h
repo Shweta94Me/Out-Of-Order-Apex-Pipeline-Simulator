@@ -8,7 +8,6 @@ Shweta ::: Structure for URF, RAT, R-RAT
 #define RATMaxSize 16
 #define RRATMaxSize 16
 
-
 #include "issue_q.h"
 
 
@@ -30,9 +29,23 @@ typedef struct RRAT{
     int phy_reg_after_comit; /*Physical register for commited Architectural Register*/
 }RRAT;
 
+typedef struct JALStackEntry{
+    int reg_tag;
+    int val;
+
+}JALStackEntry;
+ 
+// A structure to represent a stack
+typedef struct StackNode {
+    JALStackEntry data;
+    struct StackNode* next;
+}StackNode;
+
 URF urf[URFMaxSize];
 RAT rat[RATMaxSize];
 RRAT rrat[RRATMaxSize];
+
+StackNode* jalstk;
 
 void initializeURF();
 void initializeRAT();
@@ -48,4 +61,7 @@ void printURF();
 void printRAT();
 void printRRAT();
 void printArchToPhys();
+void jal_push(StackNode** root, JALStackEntry data);
+int jal_pop(StackNode** root);
+int jal_peek(StackNode* root);
 #endif
