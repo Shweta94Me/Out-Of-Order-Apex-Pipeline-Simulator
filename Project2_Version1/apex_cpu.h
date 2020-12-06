@@ -92,6 +92,12 @@ typedef struct APEX_CPU
     int int_fu_free;               //flag for int fu availability 0 is free 1 is occupied
     int mul_fu_free;               //flag for mul fu availability 0 is free 1 is occupied
 
+    //Shweta ::: Simulation operations
+    int simulate;/*Shweta : To enable simulate function*/
+    int operationCycles;/*Shweta : To run definite cycles*/
+    int memLoc; /*Shweta : Show value at particular memory location*/
+    int showMem; /*Shweta : Show value at particular memory location*/
+
     int mul_cycles;  //Mul unit takes 3 cycles to complete instruction
 
     int stoppedDispatch; //Shweta ::: If we encounter branch instruction then stopped dispatching to Issue Queue
@@ -114,7 +120,7 @@ typedef struct APEX_CPU
 } APEX_CPU;
 
 APEX_Instruction *create_code_memory(const char *filename, int *size);
-APEX_CPU *APEX_cpu_init(const char *filename);
+APEX_CPU *APEX_cpu_init(const char *filename, const char *operation, const int cycles); /*Shweta : Updated the definition*/
 void APEX_cpu_run(APEX_CPU *cpu);
 void APEX_cpu_stop(APEX_CPU *cpu);
 void printAll(APEX_CPU *cpu);

@@ -17,14 +17,18 @@ main(int argc, char const *argv[])
 
     fprintf(stderr, "APEX CPU Pipeline Simulator v%0.1lf\n", VERSION);
 
-    argc = 3; /*Shweta ::: remove this line*/
-    if (argc != 3)
+    argc = 4; /*Shweta ::: remove this line before submitting*/
+    if (argc != 4)
     {
-        fprintf(stderr, "APEX_Help: Usage %s <input_file> <cycles>\n", argv[0]);
+        fprintf(stderr, "APEX_Help: Usage %s <input_file> <operation> <Number_Of_Cycles>\n", argv[0]);
         exit(1);
     }
 
-    cpu = APEX_cpu_init(argv[1]);
+    int numberOfCycles = atoi(argv[3]);
+
+    /*Shweta : Pass input file, simulate/display/single_step, number of cycles*/
+    cpu = APEX_cpu_init(argv[1], argv[2], numberOfCycles);
+
     if (!cpu)
     {
         fprintf(stderr, "APEX_Error: Unable to initialize CPU\n");
