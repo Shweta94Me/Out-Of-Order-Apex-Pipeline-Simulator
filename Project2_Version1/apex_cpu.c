@@ -1012,7 +1012,7 @@ APEX_fetch(APEX_CPU *cpu)
             cpu->fetch.stalled = 1;
         }
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Fetch", &cpu->fetch);
         }
@@ -1023,7 +1023,7 @@ APEX_fetch(APEX_CPU *cpu)
             cpu->fetch.has_insn = FALSE;
         }
     }
-    else
+    else if(cpu->fetch.has_insn)
     {
         if (!cpu->decode.stalled)
         {
@@ -1032,7 +1032,7 @@ APEX_fetch(APEX_CPU *cpu)
             /* Copy data from fetch latch to decode latch*/
             cpu->decode = cpu->fetch;
         }
-        if (ENABLE_DEBUG_MESSAGES && cpu->fetch.has_insn)
+        if (ENABLE_DEBUG_MESSAGES && cpu->fetch.has_insn && !cpu->simulate)
         {
             print_stage_content("Fetch", &cpu->fetch);
         }
@@ -1041,6 +1041,12 @@ APEX_fetch(APEX_CPU *cpu)
         if (cpu->fetch.opcode == OPCODE_HALT)
         {
             cpu->fetch.has_insn = FALSE;
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("Fetch: Empty\n");
         }
     }
 }
@@ -1136,7 +1142,7 @@ APEX_decode(APEX_CPU *cpu)
                 }
             }
 
-            if (ENABLE_DEBUG_MESSAGES)
+            if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
             {
                 print_stage_content("Decode/RF", &cpu->decode);
             }
@@ -1144,10 +1150,16 @@ APEX_decode(APEX_CPU *cpu)
         else
         {
             cpu->decode.stalled = 1;
-            if (ENABLE_DEBUG_MESSAGES)
+            if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
             {
                 print_stage_content("Decode/RF", &cpu->decode);
             }
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("Decode/RF: Empty\n");
         }
     }
 }
@@ -1295,9 +1307,15 @@ APEX_int_fu(APEX_CPU *cpu)
         cpu->insn_completed++;
         cpu->int_fu_free = 0;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Execute INT_FU", &cpu->ex_int_fu);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("INT_FU: Empty\n");
         }
     }
 }
@@ -1333,7 +1351,7 @@ APEX_mul_fu(APEX_CPU *cpu)
         cpu->insn_completed++;
         cpu->ex_mul_fu.has_insn = FALSE;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Execute MUL_FU", &cpu->ex_mul_fu);
         }
@@ -1342,9 +1360,15 @@ APEX_mul_fu(APEX_CPU *cpu)
     {
         cpu->mul_cycles += 1;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Execute MUL_FU", &cpu->ex_mul_fu);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("MUL_FU: Empty\n");
         }
     }
 }
@@ -1421,9 +1445,15 @@ APEX_jbu1(APEX_CPU *cpu)
         }
         }
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("JBU1", &cpu->jbu1);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("JBU1: Empty\n");
         }
     }
 }
@@ -1476,9 +1506,15 @@ APEX_jbu2(APEX_CPU *cpu)
         cpu->insn_completed++;
         cpu->jbu2.has_insn = FALSE;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("JBU2", &cpu->jbu2);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("JBU2: Empty\n");
         }
     }
 }
@@ -1560,9 +1596,15 @@ APEX_memory1(APEX_CPU *cpu)
         cpu->mem2 = cpu->mem1;
         cpu->mem1.has_insn = FALSE;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Memory1", &cpu->mem1);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("Memory1: Empty\n");
         }
     }
 }
@@ -1601,9 +1643,15 @@ APEX_memory2(APEX_CPU *cpu)
         cpu->insn_completed++;
         cpu->mem2.has_insn = FALSE;
 
-        if (ENABLE_DEBUG_MESSAGES)
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             print_stage_content("Memory2", &cpu->mem2);
+        }
+    }
+    else{
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+        {
+            printf("Memory2: Empty\n");
         }
     }
 }
@@ -1614,12 +1662,13 @@ APEX_memory2(APEX_CPU *cpu)
  * Note: You are free to edit this function according to your implementation
  */
 APEX_CPU *
-APEX_cpu_init(const char *filename)
+APEX_cpu_init(const char *filename, const char *operation, const int cycles)
 {
     int i;
     APEX_CPU *cpu;
 
-    if (!filename)
+    /*Shweta : check if valid function and cylces num added by users*/
+    if (!filename && !operation && !cycles)
     {
         return NULL;
     }
@@ -1631,11 +1680,39 @@ APEX_cpu_init(const char *filename)
         return NULL;
     }
 
+    if(strcmp(operation, "showmem") != 0){
+        cpu->operationCycles = cycles;
+    }
+    else{
+        if (cycles > 4096 || cycles < 0)
+        {
+            errorHandler("MemoryError");
+        }
+        cpu->memLoc = cycles;
+        cpu->showMem = 1;
+    }
+
+    /*Shweta : If asked for simulation then set simulate property or else do display*/
+    if(strcmp(operation, "simulate") == 0)
+    {
+        cpu->simulate = 1;
+    }
+    else
+    {
+        cpu->simulate = 0;
+    }
+    
     /* Initialize PC, Registers and all pipeline stages */
     cpu->pc = 4000;
     memset(cpu->regs, 0, sizeof(int) * REG_FILE_SIZE);
     memset(cpu->data_memory, 0, sizeof(int) * DATA_MEMORY_SIZE);
-    cpu->single_step = ENABLE_SINGLE_STEP;
+    
+    cpu->single_step = 0;
+    if(strcmp(operation, "single_step") == 0)
+    {
+        cpu->single_step = ENABLE_SINGLE_STEP;
+    }
+    
 
     /* Parse input file and create code memory */
     cpu->code_memory = create_code_memory(filename, &cpu->code_memory_size);
@@ -1661,7 +1738,7 @@ APEX_cpu_init(const char *filename)
     // the cpu just try to keep seperate.
     createROB();
 
-    if (ENABLE_DEBUG_MESSAGES)
+    if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
     {
         fprintf(stderr,
                 "APEX_CPU: Initialized APEX CPU, loaded %d instructions\n",
@@ -1695,17 +1772,18 @@ void APEX_cpu_run(APEX_CPU *cpu)
 
     while (TRUE)
     {
-        if (ENABLE_DEBUG_MESSAGES)
+        /*Shweta : Show if not simulate*/
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("--------------------------------------------\n");
             printf("Clock Cycle #: %d\n", cpu->clock);
             printf("--------------------------------------------\n");
         }
 
-        
-        if (cpu->clock)
+        /*Shweta : Stop execution if enconter HALT instruction 
+        or excuted asked number of instructions cycles(for simulate or display)*/
+        if (cpu->clock == cpu->operationCycles && !cpu->showMem)
         {
-            /* Halt in writeback stage */
             printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
             break;
         }
@@ -1746,10 +1824,6 @@ void APEX_cpu_run(APEX_CPU *cpu)
         APEX_int_fu(cpu);
         APEX_mul_fu(cpu);
 
-        if(!cpu->decode.stalled)
-            printf("Decode is not stalled\n");
-        else
-        printf("Decode is stalled\n");
         // decode stage
         APEX_decode(cpu);
 
@@ -1775,7 +1849,9 @@ void APEX_cpu_run(APEX_CPU *cpu)
         }
         cpu->clock++;
     }
-    printAll(cpu);
+    if(!cpu->single_step){
+        printAll(cpu);
+    }
 }
 
 void printAll(APEX_CPU *cpu)
