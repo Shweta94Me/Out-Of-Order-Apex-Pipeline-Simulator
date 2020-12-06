@@ -73,23 +73,10 @@ int readSrcFromURF(int phy_reg){
     return -1;
 }
 
-void updateURF(int result, int phy_res, enum FU fu_type){
-
-    if(fu_type == Int_FU)
-    {
-        urf[phy_res].value = result;
-        urf[phy_res].status = 1;
-    }
-    else if(fu_type == Mul_FU)
-    {
-        urf[phy_res].value = result;
-        urf[phy_res].status = 1;
-    }
-    else if(fu_type == Mem_FU)
-    {
-        urf[phy_res].value = result;
-        urf[phy_res].status = 1;
-    }
+//Shweta ::: Change status to Valid and load value from result
+void updateURF(int result, int phy_res){
+    urf[phy_res].value = result;
+    urf[phy_res].status = 1;
 }
 
 void freeRegFromURF(int last_commited_phy_reg)
@@ -102,10 +89,12 @@ void updateRRAT(int phy_rd, int arch_idx)
 {
     int last_commited_phy_reg = rrat[arch_idx].phy_reg_after_comit;
     if(last_commited_phy_reg != -1){
+        //Renamer instruction came in
         freeRegFromURF(last_commited_phy_reg);
         rrat[arch_idx].phy_reg_after_comit = phy_rd; 
     }
     else{
+        //Not a renamer instruction
         rrat[arch_idx].phy_reg_after_comit = phy_rd; 
         // freeRegFromURF(phy_rd);
     }
