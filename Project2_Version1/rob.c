@@ -66,16 +66,16 @@ void ROB_push(ROB_entry entry)
 int ROB_headEntryValid(){
 
     if (!ROB_is_empty() && rob->head->entry.status && 
-    (strcmp(rob->head->entry.opcode_str, "LOAD") != 0 ||   
-    strcmp(rob->head->entry.opcode_str, "LDR") != 0 ||
-    strcmp(rob->head->entry.opcode_str, "STORE") != 0 ||
-    strcmp(rob->head->entry.opcode_str, "STR") != 0 || 
-    strcmp(rob->head->entry.opcode_str, "CMP") != 0 ||  
-    strcmp(rob->head->entry.opcode_str, "BZ") != 0  || 
-    strcmp(rob->head->entry.opcode_str, "BNZ") != 0 || 
-    strcmp(rob->head->entry.opcode_str, "JUMP") != 0 ||
+    strcmp(rob->head->entry.opcode_str, "LOAD") != 0 &&   
+    strcmp(rob->head->entry.opcode_str, "LDR") != 0 &&
+    strcmp(rob->head->entry.opcode_str, "STORE") != 0 &&
+    strcmp(rob->head->entry.opcode_str, "STR") != 0 &&
+    strcmp(rob->head->entry.opcode_str, "CMP") != 0 &&  
+    strcmp(rob->head->entry.opcode_str, "BZ") != 0  && 
+    strcmp(rob->head->entry.opcode_str, "BNZ") != 0 && 
+    strcmp(rob->head->entry.opcode_str, "JUMP") != 0 &&
     strcmp(rob->head->entry.opcode_str, "HALT") != 0 
-    ))
+    )
         return rob->head->entry.phy_rd; 
     else
         return -1;
@@ -179,7 +179,7 @@ void set_rob_mready_bit(int pc){
 void printROB(){
 
     ROB_entry_node* temp = rob->head;
-    printf("\nElements in Circular Queue are : ");
+    printf("\nDetails of ROB (Reorder Buffer) State :");
     while(!ROB_is_empty() && temp){
         printf("%d->", temp->entry.pc_value);
         temp = temp->next;

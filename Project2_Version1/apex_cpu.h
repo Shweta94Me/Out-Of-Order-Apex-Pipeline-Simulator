@@ -106,6 +106,7 @@ typedef struct APEX_CPU
     /* Pipeline stages */
     CPU_Stage fetch;
     CPU_Stage decode;
+    CPU_Stage dispatch;  // creating a dispatch stage just to simulate that we have Ins in iq for one cycle
     CPU_Stage ex_int_fu;
     CPU_Stage ex_mul_fu;
 
