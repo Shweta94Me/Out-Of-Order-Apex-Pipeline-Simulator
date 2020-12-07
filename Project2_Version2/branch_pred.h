@@ -40,7 +40,7 @@ typedef struct BTB
     BTB_entry *btb_entry;
 }BTB;
 
-BTB *btb;
+BTB_entry btb[BTB_SIZE];
 BIS *bis;
 
 void createBTB();

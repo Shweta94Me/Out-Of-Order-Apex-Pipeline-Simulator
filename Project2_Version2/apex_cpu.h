@@ -13,6 +13,7 @@
 #include "issue_q.h"
 #include "utilities.h"
 #include "rob.h"
+#include "branch_pred.h"
 
 
 /* Format of an APEX instruction  */

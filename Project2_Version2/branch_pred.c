@@ -1,12 +1,6 @@
 #include <stdlib.h>
 #include "branch_pred.h"
 
-void createBTB()
-{
-    btb = (struct BTB*)malloc(sizeof(struct BTB));
-    btb->btb_entry = (BTB_entry *)malloc(BTB_SIZE * sizeof(BTB_entry));
-}
-
 void createBIS()
 {
     bis = (struct BIS*)malloc(sizeof(struct BIS));
