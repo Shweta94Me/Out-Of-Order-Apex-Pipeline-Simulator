@@ -30,6 +30,84 @@ void initializeRRAT(){
     }
 }
 
+
+void initializeCheckPointRat(){
+    checkpoint_RAT_entry entry;
+    entry.ratFree = 1;  // 1 is for free and 0 is not free
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+        entry.Rat[i].phy_reg_num = -1;
+    }
+    for (int i = 0; i < CheckPointMaxSize; i++)
+    {
+        checkpointRat[i].entry = entry;
+    }
+}
+
+void initializeCheckPointURF(){
+    checkpoint_URF_entry entry;
+    entry.urfFree = 1; // 1 is for free and 0 is not free
+    for (int i = 0; i < URFMaxSize ; i++)
+    {
+        
+        entry.Urf[i].free = 0; //Intialize as free
+        entry.Urf[i].status = 0; //Intialize as Invalid 
+        entry.Urf[i].value = 0;
+    }
+    for (int i = 0; i < CheckPointMaxSize; i++)
+    {
+        checkpointUrf[i].entry = entry;
+    }
+}
+
+// if entry possible then index in checkpoint table rat else -1
+int insertCheckpointRat(RAT checkpoint_rat[]){
+
+    // return shweta the index of where this checkpoint has insert in the array
+    // if there is some space return -1
+    checkpoint_RAT_entry entry;
+    entry.ratFree = 0;  // making it not free
+
+    // copying all the values
+    for (int i = 0; i < RATMaxSize; i++)
+    {
+       entry.Rat[i].phy_reg_num = checkpoint_rat[i].phy_reg_num;
+    }
+    for (int i = 0; i < CheckPointMaxSize; i++)
+    {
+        if(checkpointRat[i].entry.ratFree){
+            checkpointRat[i].entry = entry;
+            return i;
+        }
+    }
+    return -1;
+}
+
+int insertCheckpointURF(URF checkpoint_urf[]){
+
+    checkpoint_URF_entry entry;
+    entry.urfFree = 0; // making not free
+
+    for (int i = 0; i < URFMaxSize ; i++)
+    {
+        
+        entry.Urf[i].free = checkpoint_urf[i].free; //Intialize as free
+        entry.Urf[i].status =  checkpoint_urf[i].status; //Intialize as Invalid 
+        entry.Urf[i].value =  checkpoint_urf[i].value;
+    }
+
+    for (int i = 0; i < CheckPointMaxSize; i++)
+    {
+        if(checkpointUrf[i].entry.urfFree){
+            checkpointUrf[i].entry = entry;
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+
 //Check if URF has a free entry and return that free entry index
 
 int traverseURF()

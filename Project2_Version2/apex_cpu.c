@@ -1843,6 +1843,12 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
     // Initialize JalStack
     jalstk = NULL;
 
+    // init checkpoint rat
+    initializeCheckPointRat();
+
+    // init checpoint urf
+    initializeCheckPointURF();
+
     //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to
     // the cpu just try to keep seperate.
     createROB();
