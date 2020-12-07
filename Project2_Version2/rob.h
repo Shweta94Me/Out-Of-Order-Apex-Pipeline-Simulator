@@ -38,6 +38,8 @@ typedef struct ROB_entry
 
     int mready;
 
+    int branch_tag; //Speculative Execution for memory instruction
+
 } ROB_entry;
 
 typedef struct ROB_entry_node ROB_entry_node;

@@ -38,16 +38,25 @@ typedef struct BIS
 typedef struct BTB
 {
     BTB_entry *btb_entry;
+    int size;
 }BTB;
 
-BTB_entry btb[BTB_SIZE];
+BTB *btb;
 BIS *bis;
 
-void createBTB();
+
 void createBIS();
+void createBTB();
 int BIS_is_full();
 int BIS_is_empty();
-int BIS_push(BIS_entry);
+int BIS_incr_top();
 int BIS_pop();
+int get_BIS_top_idx();
+int get_size_of_BTB();
+int BTB_is_full();
+int BTB_is_empty();
+int BTB_lookup(int pc);
+int BTB_entry_exist(int pc);
+int BTB_push(int pc);
 
 #endif

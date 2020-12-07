@@ -71,6 +71,9 @@ typedef struct CPU_Stage
     int rs2_value;
     int rs3_value; //Shweta ::: Added entry for third register e.g. STR  //Architectural Register
 
+    //Speculative Execution
+    int branch_tag; ///To flush FU's
+
     int result_buffer;
     int memory_address;
     int has_insn;

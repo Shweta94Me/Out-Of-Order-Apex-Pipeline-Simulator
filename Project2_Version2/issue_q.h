@@ -50,6 +50,9 @@ typedef struct node_attr{
     int rd_arch; //rd arch
     int phy_rd; //Destination physical register
 
+    //Speculative Execution
+    int branch_tag; //To flush IQ
+
 }node_attr;
 
 typedef struct node {
