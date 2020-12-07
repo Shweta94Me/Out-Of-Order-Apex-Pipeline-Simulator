@@ -8,8 +8,8 @@
             "name": "gcc.exe - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "C:\\Siddhesh\\COA\\Out-Of-Order-Apex-Pipeline-Simulator\\Project2_Version1\\rob_test.exe",
-            "args": [],
+            "program": "C:\\Siddhesh\\COA\\Out-Of-Order-Apex-Pipeline-Simulator\\Project2_Version1\\apex_sim.exe",
+            "args": ["C:\\Siddhesh\\COA\\Out-Of-Order-Apex-Pipeline-Simulator\\Project2_Version1\\input.asm","single_step","100"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -22,8 +22,7 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ],
-            "preLaunchTask": "C/C++: gcc.exe build active file"
+            ]
         }
     ]
 }
