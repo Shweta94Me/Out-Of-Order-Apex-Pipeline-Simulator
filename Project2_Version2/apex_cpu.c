@@ -190,6 +190,8 @@ node_attr createData(APEX_CPU *cpu)
     data.phy_rd = cpu->decode.rd_phy_res;
     data.rd_arch = cpu->decode.rd;
 
+    data.branch_tag = cpu->decode.branch_tag;
+
     return data;
 }
 
@@ -622,6 +624,9 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
 
     entry.mready = mready;
 
+    entry.branch_tag = cpu->decode.branch_tag;
+
+
     return entry;
 }
 /*Add entry to ROB*/
@@ -686,6 +691,15 @@ void printMemory(APEX_CPU *cpu)
 /*Make instruction entry to Issue Queue*/
 void dispatch(APEX_CPU *cpu)
 {
+    /*Shweta ::: Branch prediction and speculative execution
+    1. For non branch instruction - get the BIS top index and use it as a branch tag
+    2. For branch instruction:
+        i. Check whether BIS is not full
+        ii. Create new entry in BIS 
+        iii. If running branch instruction doesn't exist in BTB then add it to BTB
+        iv. Pass the BIS top index to IQ
+        v. Set the ROB tail pointer to newly created BIS entry
+    */
     if (cpu->decode.has_insn && !cpu->decode.stalled)
     {
         if (cpu->decode.fu_type == Int_FU)
@@ -693,6 +707,8 @@ void dispatch(APEX_CPU *cpu)
             //Shweta ::: Do not push HALT instrc to IQ; only add entry to ROB
             if (strcmp(cpu->decode.opcode_str, "HALT") != 0)
             {
+                int branch_tag = get_BIS_top_idx();
+                cpu->decode.branch_tag = branch_tag;
                 //Pass all instructions to Issue Queue
                 node_attr data = createData(cpu);
                 enQueue(data);
@@ -703,6 +719,8 @@ void dispatch(APEX_CPU *cpu)
         }
         else if (cpu->decode.fu_type == Mul_FU)
         {
+            int branch_tag = get_BIS_top_idx();
+            cpu->decode.branch_tag = branch_tag;
             node_attr data = createData(cpu);
             enQueue(data);
             // adding instruction to rob
@@ -711,6 +729,9 @@ void dispatch(APEX_CPU *cpu)
         }
         else if (cpu->decode.fu_type == Mem_FU)
         {
+            int branch_tag = get_BIS_top_idx();
+            cpu->decode.branch_tag = branch_tag;
+
             //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue
             int mready = 1; //1 - set and 0 - not set
             if ((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) ||
@@ -730,12 +751,28 @@ void dispatch(APEX_CPU *cpu)
         }
         else if (cpu->decode.fu_type == JBU_FU)
         {
+            //Check if BTB entry exist for this branch else create a new one
+            if(!BTB_entry_exist(cpu->decode.pc))
+            {
+                BTB_push(cpu->decode.pc);
+            }
+            BIS_incr_top(); //Create new entry in BIS with incremented top index
+            int branch_tag = get_BIS_top_idx();
+            cpu->decode.branch_tag = branch_tag;
+
             //Pass all instructions to Issue Queue
             node_attr data = createData(cpu);
             enQueue(data);
 
             // adding instruction to rob
             add_instr_to_ROB(cpu, 0);
+
+            //Add ROB tail pointer to newly created BIS entry 
+            bis->bis_entry[branch_tag].rob_entry = rob->tail;
+
+            ///Now Checkpoint the RAT and URF table and update the BIS entry to point new created checkpoint tables
+            ///Siddhesh is working on it now
+
             cpu->stoppedDispatch = 1;
             cpu->decode.has_insn = FALSE;
         }
@@ -1032,8 +1069,13 @@ APEX_fetch(APEX_CPU *cpu)
         cpu->fetch.rs3_phy_res = -1;
         cpu->fetch.imm = current_ins->imm;
 
-        /* Update PC for next instruction */
-        cpu->pc += 4;
+
+        //Lookup in BTB for this branch instruction
+        int target_addrs = BTB_lookup(cpu->fetch.pc); //Pass current stage pc
+        if(target_addrs != -1)
+            cpu->pc = target_addrs;
+        else
+            cpu->pc += 4; /* Update PC for next instruction */
 
         if (!cpu->decode.stalled)
         {
@@ -1190,7 +1232,12 @@ APEX_decode(APEX_CPU *cpu)
             case OPCODE_JUMP:
             {
                 cpu->decode.fu_type = JBU_FU;
-                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                int BTB_decision = 0;
+                if(BTB_entry_exist(cpu->decode.pc) == -1 && BTB_is_full())
+                {
+                    BTB_decision = 1; ///Rename and dispatching should not happen
+                }
+                if(!BTB_decision && !isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch && !BIS_is_full())
                 {
                     renameRegister(cpu);
                     if(!cpu->decode.stalled)
@@ -1448,6 +1495,7 @@ APEX_jbu1(APEX_CPU *cpu)
 
         case OPCODE_BZ:
         {
+            
             if (cpu->zero_flag == TRUE)
             {
                 /* Calculate new PC, and send it to fetch unit */
@@ -1852,6 +1900,12 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
     //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to
     // the cpu just try to keep seperate.
     createROB();
+
+    //Initialize BIS 
+    createBIS();
+
+    //Initialize BTB
+    createBTB();
 
     if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
     {
