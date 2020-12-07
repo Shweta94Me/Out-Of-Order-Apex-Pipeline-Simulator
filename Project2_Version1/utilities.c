@@ -193,12 +193,12 @@ int isEmpty(struct StackNode* root)
  
 void jal_push(StackNode** root, JALStackEntry data)
 {
-    printf("start");
+    // printf("start");
     StackNode* stackNode = stackNewNode(data);
     stackNode->next = *root;
     *root = stackNode;
-    printf("%d pushed to stack\n", data.val);
-    printf("end");
+    // printf("%d pushed to stack\n", data.val);
+    // printf("end");
 
 }
  

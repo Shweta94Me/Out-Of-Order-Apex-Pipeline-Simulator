@@ -108,7 +108,7 @@ void printQueue()
 {
 	if(!isQueueEmpty()){
 		struct node* temp = iq->front;
-
+		printf("\nDetails of IQ (Issue Queue) State:");
 		while(temp)
 		{
 			printf("%d->", temp->data.pc);

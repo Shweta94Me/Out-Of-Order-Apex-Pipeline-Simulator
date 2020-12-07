@@ -253,6 +253,24 @@ void updateIQ(APEX_CPU *cpu, enum FU fu_type)
                 temp->data.rs3_ready = 1;
             }
         }
+        else if (fu_type == JBU_FU)
+        {
+            if (temp->data.rs1_tag == cpu->jbu2.rd_phy_res)
+            {
+                temp->data.rs1_value = cpu->jbu2.result_buffer;
+                temp->data.rs1_ready = 1;
+            }
+            if (temp->data.rs2_tag == cpu->jbu2.rd_phy_res)
+            {
+                temp->data.rs2_value = cpu->jbu2.result_buffer;
+                temp->data.rs2_ready = 1;
+            }
+            if (temp->data.rs3_tag == cpu->jbu2.rd_phy_res)
+            {
+                temp->data.rs3_value = cpu->jbu2.result_buffer;
+                temp->data.rs3_ready = 1;
+            }
+        }
         temp = temp->next;
     }
 
@@ -593,7 +611,11 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
     // data.FU_Type = cpu->decode.fu_type;
 
     entry.imm = cpu->decode.imm;
-    entry.status = 0;
+
+    if(strcmp(cpu->decode.opcode_str, "HALT") == 0)
+        entry.status = 1;
+    else
+        entry.status = 0;
 
     entry.phy_rd = cpu->decode.rd_phy_res;
     entry.rd_arch = cpu->decode.rd;
@@ -662,11 +684,69 @@ void printMemory(APEX_CPU *cpu)
 }
 
 /*Make instruction entry to Issue Queue*/
-void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
+void dispatch(APEX_CPU *cpu)
 {
-    cpu->decode.stalled = 0; //Set decode to unstalled
+    if (cpu->decode.has_insn && !cpu->decode.stalled)
+    {
+        if (cpu->decode.fu_type == Int_FU)
+        {
+            //Shweta ::: Do not push HALT instrc to IQ; only add entry to ROB
+            if (strcmp(cpu->decode.opcode_str, "HALT") != 0)
+            {
+                //Pass all instructions to Issue Queue
+                node_attr data = createData(cpu);
+                enQueue(data);
+            }
+            // adding instruction to rob
+            add_instr_to_ROB(cpu, 0);
+            cpu->decode.has_insn = FALSE;
+        }
+        else if (cpu->decode.fu_type == Mul_FU)
+        {
+            node_attr data = createData(cpu);
+            enQueue(data);
+            // adding instruction to rob
+            add_instr_to_ROB(cpu, 0);
+            cpu->decode.has_insn = FALSE;
+        }
+        else if (cpu->decode.fu_type == Mem_FU)
+        {
+            //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue
+            int mready = 1; //1 - set and 0 - not set
+            if ((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) ||
+                (strcmp(cpu->decode.opcode_str, "LDR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
+                (strcmp(cpu->decode.opcode_str, "STORE") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
+                (strcmp(cpu->decode.opcode_str, "STR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready || !cpu->decode.rs3_ready)))
+            {
+                mready = 0;
+                //Pass all instructions to Issue Queue
+                node_attr data = createData(cpu);
+                enQueue(data);
+            }
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu, mready);
+            cpu->decode.has_insn = FALSE;
+        }
+        else if (cpu->decode.fu_type == JBU_FU)
+        {
+            //Pass all instructions to Issue Queue
+            node_attr data = createData(cpu);
+            enQueue(data);
+
+            // adding instruction to rob
+            add_instr_to_ROB(cpu, 0);
+            cpu->stoppedDispatch = 1;
+            cpu->decode.has_insn = FALSE;
+        }
+    }
+}
+
+void renameRegister(APEX_CPU *cpu)
+{
     int val = 0;
-    if (fu_type == Int_FU)
+    cpu->decode.stalled = 0;
+    if (cpu->decode.fu_type == Int_FU)
     {
         int phy_reg_dest = 0;
 
@@ -725,16 +805,6 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //CMP instruction has no destination register
             if (strcmp(cpu->decode.opcode_str, "CMP") != 0 && strcmp(cpu->decode.opcode_str, "HALT") != 0)
                 cpu->decode.rd_phy_res = phy_reg_dest;
-
-            //Shweta :::fu_type
-            cpu->decode.fu_type = Int_FU;
-
-            //Pass all instructions to Issue Queue
-            node_attr data = createData(cpu);
-            enQueue(data);
-
-            // adding instruction to rob
-            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -742,7 +812,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             cpu->decode.stalled = 1;
         }
     }
-    else if (fu_type == Mul_FU)
+    else if (cpu->decode.fu_type == Mul_FU)
     {
         int phy_reg_dest = 0;
         //Shweta ::: Rename source registers
@@ -783,15 +853,6 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         {
 
             cpu->decode.rd_phy_res = phy_reg_dest;
-
-            //Shweta :::fu_type
-            cpu->decode.fu_type = Mul_FU;
-
-            node_attr data = createData(cpu);
-            enQueue(data);
-
-            // adding instruction to rob
-            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -799,7 +860,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             cpu->decode.stalled = 1;
         }
     }
-    else if (fu_type == Mem_FU)
+    else if (cpu->decode.fu_type == Mem_FU)
     {
         int phy_reg_dest = 0;
         //Shweta ::: Rename source registers
@@ -874,25 +935,6 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //CMP instruction has no destination register
             if (strcmp(cpu->decode.opcode_str, "STORE") != 0 && strcmp(cpu->decode.opcode_str, "STR") != 0)
                 cpu->decode.rd_phy_res = phy_reg_dest;
-
-            //Shweta :::fu_type
-            cpu->decode.fu_type = Mem_FU;
-
-            //Shweta ::: If one of the source operand is not read then add instruction to Issue Queue
-            int mready = 1; //1 - set and 0 - not set
-            if ((strcmp(cpu->decode.opcode_str, "LOAD") == 0 && !cpu->decode.rs1_ready) ||
-                (strcmp(cpu->decode.opcode_str, "LDR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
-                (strcmp(cpu->decode.opcode_str, "STORE") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready)) ||
-                (strcmp(cpu->decode.opcode_str, "STR") == 0 && (!cpu->decode.rs1_ready || !cpu->decode.rs2_ready || !cpu->decode.rs3_ready)))
-            {
-                mready = 0;
-                //Pass all instructions to Issue Queue
-                node_attr data = createData(cpu);
-                enQueue(data);
-            }
-
-            // adding instruction to rob
-            add_instr_to_ROB(cpu, mready);
         }
         else
         {
@@ -900,7 +942,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             cpu->decode.stalled = 1;
         }
     }
-    else if (fu_type == JBU_FU)
+    else if (cpu->decode.fu_type == JBU_FU)
     {
         int phy_reg_dest = 0;
         //Shweta ::: Rename source registers
@@ -941,16 +983,6 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
             //Only JAL instruction has destionation register
             if (strcmp(cpu->decode.opcode_str, "JAL") == 0)
                 cpu->decode.rd_phy_res = phy_reg_dest;
-
-            //Shweta :::fu_type
-            cpu->decode.fu_type = JBU_FU;
-
-            //Pass all instructions to Issue Queue
-            node_attr data = createData(cpu);
-            enQueue(data);
-
-            // adding instruction to rob
-            add_instr_to_ROB(cpu, 0);
         }
         else
         {
@@ -959,6 +991,7 @@ void dispatch_instr_to_IQ(APEX_CPU *cpu, enum FU fu_type)
         }
     }
 }
+
 /*Utility functions end*/
 
 /*
@@ -1023,7 +1056,7 @@ APEX_fetch(APEX_CPU *cpu)
             cpu->fetch.has_insn = FALSE;
         }
     }
-    else if(cpu->fetch.has_insn)
+    else if (cpu->fetch.has_insn)
     {
         if (!cpu->decode.stalled)
         {
@@ -1043,7 +1076,8 @@ APEX_fetch(APEX_CPU *cpu)
             cpu->fetch.has_insn = FALSE;
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("Fetch: Empty\n");
@@ -1061,102 +1095,125 @@ APEX_decode(APEX_CPU *cpu)
 {
     if (cpu->decode.has_insn)
     {
-        if (!isQueueFull() && !cpu->stoppedDispatch && !ROB_is_full() && !cpu->decode.stalled)
+
+        /* Read operands from register file based on the instruction type */
+        switch (cpu->decode.opcode)
         {
-            /* Read operands from register file based on the instruction type */
-            switch (cpu->decode.opcode)
+            case OPCODE_ADD:
+            case OPCODE_SUB:
+            case OPCODE_AND:
+            case OPCODE_OR:
+            case OPCODE_XOR:
+            case OPCODE_MOVC:
+            case OPCODE_ADDL:
+            case OPCODE_SUBL:
+            case OPCODE_CMP:
             {
-                case OPCODE_ADD:
-                case OPCODE_SUB:
-                case OPCODE_AND:
-                case OPCODE_OR:
-                case OPCODE_XOR:
-                case OPCODE_MOVC:
-                case OPCODE_ADDL:
-                case OPCODE_SUBL:
-                case OPCODE_CMP:
+                cpu->decode.fu_type = Int_FU;
+                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
                 {
-                    dispatch_instr_to_IQ(cpu, Int_FU);
-
-                    if (!cpu->decode.stalled)
-                    {
-                        /* Copy data from decode latch to execute latch*/
-                        // cpu->ex_int_fu = cpu->decode;
-                        cpu->decode.has_insn = FALSE;
-                    }
-                    break;
-                }
-
-                case OPCODE_LOAD:
-                case OPCODE_LDR:
-                case OPCODE_STORE:
-                case OPCODE_STR:
-                {
-                    dispatch_instr_to_IQ(cpu, Mem_FU);
-
-                    if (!cpu->decode.stalled)
-                    {
-                        /* Copy data from decode latch to execute latch*/
-                        // cpu->mem1 = cpu->decode;
-                        cpu->decode.has_insn = FALSE;
-                    }
-                    break;
-                }
-
-                case OPCODE_MUL:
-                {
-                    dispatch_instr_to_IQ(cpu, Mul_FU);
-
-                    if (!cpu->decode.stalled)
-                    {
-                        /* Copy data from decode latch to execute latch*/
-                        // cpu->ex_mul_fu = cpu->decode;
-                        cpu->decode.has_insn = FALSE;
-                    }
-                    break;
-                }
-
-                case OPCODE_HALT:
-                {
-                    dispatch_instr_to_IQ(cpu, Int_FU);
-                    /* Copy data from decode latch to execute latch*/
-                    // cpu->ex_int_fu = cpu->decode;
+                    renameRegister(cpu);
                     if(!cpu->decode.stalled)
-                        cpu->decode.has_insn = FALSE;
-                    break;
-                }
-
-                case OPCODE_BZ:
-                case OPCODE_BNZ:
-                case OPCODE_JAL:
-                case OPCODE_JUMP:
-                {
-                    dispatch_instr_to_IQ(cpu, JBU_FU);
-                    if (!cpu->decode.stalled)
                     {
-                        ///Create we are going to stopped dispatching
-                        cpu->stoppedDispatch = 1;
-                        cpu->decode.has_insn = FALSE; //As we have pushed branch instruction to Issue Queue clear the decode stage
+                        dispatch(cpu);
                     }
-                    break;
+                    else{
+                        cpu->decode.stalled = 1;
+                    }
                 }
+                else{
+                        cpu->decode.stalled = 1;
+                    }
+                break;
             }
 
-            if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
+            case OPCODE_LOAD:
+            case OPCODE_LDR:
+            case OPCODE_STORE:
+            case OPCODE_STR:
             {
-                print_stage_content("Decode/RF", &cpu->decode);
+                cpu->decode.fu_type = Mem_FU;
+                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                {
+                    renameRegister(cpu);
+                    if(!cpu->decode.stalled)
+                    {
+                        dispatch(cpu);
+                    }
+                    else{
+                        cpu->decode.stalled = 1;
+                    }
+                }
+                else{
+                        cpu->decode.stalled = 1;
+                    }
+                break;
+            }
+
+            case OPCODE_MUL:
+            {
+                cpu->decode.fu_type = Mul_FU;
+                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                {
+                    renameRegister(cpu);
+                    if(!cpu->decode.stalled)
+                    {
+                        dispatch(cpu);
+                    }
+                    else{
+                        cpu->decode.stalled = 1;
+                    }
+                }
+                else{
+                        cpu->decode.stalled = 1;
+                    }
+                break;
+            }
+
+            case OPCODE_HALT:
+            {
+                cpu->decode.fu_type = Int_FU;
+                if(!cpu->decode.stalled){
+                    if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch){
+                        dispatch(cpu);
+                    }
+                    else{
+                        cpu->decode.stalled = 1;
+                    }
+                }
+                break;
+            }
+
+            case OPCODE_BZ:
+            case OPCODE_BNZ:
+            case OPCODE_JAL:
+            case OPCODE_JUMP:
+            {
+                cpu->decode.fu_type = JBU_FU;
+                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                {
+                    renameRegister(cpu);
+                    if(!cpu->decode.stalled)
+                    {
+                        dispatch(cpu);
+                    }
+                    else{
+                        cpu->decode.stalled = 1;
+                    }
+                }
+                else{
+                        cpu->decode.stalled = 1;
+                    }
+                break;
             }
         }
-        else
+        if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
-            cpu->decode.stalled = 1;
-            if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
-            {
-                print_stage_content("Decode/RF", &cpu->decode);
-            }
+            print_stage_content("Decode/RF", &cpu->decode);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("Decode/RF: Empty\n");
@@ -1183,8 +1240,6 @@ void broadcastData(APEX_CPU *cpu, int result, int phy_res, enum FU fu_type)
 static void
 APEX_int_fu(APEX_CPU *cpu)
 {
-    issueInstruction(cpu);
-
     if (cpu->ex_int_fu.has_insn)
     {
         /* Execute logic based on instruction type */
@@ -1312,7 +1367,8 @@ APEX_int_fu(APEX_CPU *cpu)
             print_stage_content("Execute INT_FU", &cpu->ex_int_fu);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("INT_FU: Empty\n");
@@ -1323,7 +1379,6 @@ APEX_int_fu(APEX_CPU *cpu)
 static void
 APEX_mul_fu(APEX_CPU *cpu)
 {
-    issueInstruction(cpu);
     //Entering mul unit for the first time
     /*Shweta ::: We need to wait for three cycles in MUL and mul_cycles initialized with zero hence checking 
     against 2 when entering in MUL_FU for third cycle*/
@@ -1365,7 +1420,8 @@ APEX_mul_fu(APEX_CPU *cpu)
             print_stage_content("Execute MUL_FU", &cpu->ex_mul_fu);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("MUL_FU: Empty\n");
@@ -1376,8 +1432,6 @@ APEX_mul_fu(APEX_CPU *cpu)
 static void
 APEX_jbu1(APEX_CPU *cpu)
 {
-    issueInstruction(cpu);
-
     if (cpu->jbu1.has_insn)
     {
         switch (cpu->jbu1.opcode)
@@ -1408,11 +1462,23 @@ APEX_jbu1(APEX_CPU *cpu)
 
                 /* Make sure fetch stage is enabled to start fetching from new PC */
                 cpu->fetch.has_insn = TRUE;
+                if(cpu->stoppedDispatch)
+            {
+                cpu->stoppedDispatch = 0;
+                cpu->decode.stalled = 0;
+                //Shweta ::: added below two lines Try - remove if doesn't work
+                cpu->fetch.stalled = 0;
+            }
             }
             /*Shweta ::: Open for dispatching*/
             update_ROB(cpu->jbu1);
-            cpu->stoppedDispatch = 0;
-            cpu->decode.stalled = 0;
+            if(cpu->stoppedDispatch)
+            {
+                cpu->stoppedDispatch = 0;
+                cpu->decode.stalled = 0;
+                //Shweta ::: added below two lines Try - remove if doesn't work
+                // cpu->fetch.stalled = 0;
+            }
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1434,11 +1500,23 @@ APEX_jbu1(APEX_CPU *cpu)
 
                 /* Make sure fetch stage is enabled to start fetching from new PC */
                 cpu->fetch.has_insn = TRUE;
+                if(cpu->stoppedDispatch)
+                {
+                    cpu->stoppedDispatch = 0;
+                    cpu->decode.stalled = 0;
+                    //Shweta ::: added below two lines Try - remove if doesn't work
+                    cpu->fetch.stalled = 0;
+                }
             }
             /*Shweta ::: Open for dispatching*/
             update_ROB(cpu->jbu1);
-            cpu->stoppedDispatch = 0;
-            cpu->decode.stalled = 0;
+            if(cpu->stoppedDispatch)
+            {
+                cpu->stoppedDispatch = 0;
+                cpu->decode.stalled = 0;
+                //Shweta ::: added below two lines Try - remove if doesn't work
+                //cpu->fetch.stalled = 0;
+            }
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1450,7 +1528,8 @@ APEX_jbu1(APEX_CPU *cpu)
             print_stage_content("JBU1", &cpu->jbu1);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("JBU1: Empty\n");
@@ -1465,55 +1544,66 @@ APEX_jbu2(APEX_CPU *cpu)
     {
         switch (cpu->jbu2.opcode)
         {
-        case OPCODE_JUMP:
-        {
-            int reg_tag = jal_peek(jalstk);
-            if(reg_tag != INT_MIN && reg_tag == cpu->jbu1.rs1){
-                int reg_val = jal_pop(&jalstk);
-                if(reg_val != INT_MIN){
+            case OPCODE_JUMP:
+            {
+                int reg_tag = jal_peek(jalstk);
+                if (reg_tag != INT_MIN && reg_tag == cpu->jbu2.rs1)
+                {
+                    int reg_val = jal_pop(&jalstk);
                     cpu->jbu2.rs1_value = reg_val;
-                }   
+                }
+
+                /*Shweta ::: Calculate the new PC and send it to fetch unit*/
+                cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+
+                cpu->fetch_from_next_cycle = TRUE;
+
+                /*Flush previous stages*/
+                cpu->decode.has_insn = FALSE;
+
+                /*Enable fetch stage to start fetching from new PC*/
+                cpu->fetch.has_insn = TRUE;
+
+                update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+                break;
             }
 
-            /*Shweta ::: Calculate the new PC and send it to fetch unit*/
-            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+            case OPCODE_JAL:
+            {
+                cpu->jbu2.result_buffer = cpu->jbu2.pc + 4;
+                cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
 
-            cpu->fetch_from_next_cycle = TRUE;
+                broadcastData(cpu, cpu->jbu2.result_buffer, cpu->jbu2.rd_phy_res, JBU_FU); // only when completed 3 cycles
 
-            /*Flush previous stages*/
-            cpu->decode.has_insn = FALSE;
+                /* Copy data from execute latch to memory latch*/
+                update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
 
-            /*Enable fetch stage to start fetching from new PC*/
-            cpu->fetch.has_insn = TRUE;
+                JALStackEntry entry;
+                entry.reg_tag = cpu->jbu2.rd;
+                entry.val = cpu->jbu2.result_buffer;
+                jal_push(&jalstk, entry);
 
-            break;
-        }
+                /* Since we are using reverse callbacks for pipeline stages, 
+                                * this will prevent the new instruction from being fetched in the current cycle*/
+                cpu->fetch_from_next_cycle = TRUE;
 
-        case OPCODE_JAL:
-        {
-            cpu->jbu2.result_buffer = cpu->pc + 4;
-            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+                /* Flush previous stages */
+                cpu->decode.has_insn = FALSE;
 
-            JALStackEntry entry;
-            entry.reg_tag = cpu->jbu2.rs1;
-            entry.val = cpu->jbu2.result_buffer;
-            jal_push(&jalstk, entry);
-
-            /* Since we are using reverse callbacks for pipeline stages, 
-                            * this will prevent the new instruction from being fetched in the current cycle*/
-            cpu->fetch_from_next_cycle = TRUE;
-
-            /* Flush previous stages */
-            cpu->decode.has_insn = FALSE;
-
-            /* Make sure fetch stage is enabled to start fetching from new PC */
-            cpu->fetch.has_insn = TRUE;
-        }
+                /* Make sure fetch stage is enabled to start fetching from new PC */
+                cpu->fetch.has_insn = TRUE;
+            }
         }
 
         /*Shweta ::: Open for dispatching*/
-        cpu->stoppedDispatch = 0;
-        cpu->decode.stalled = 0;
+        if(cpu->stoppedDispatch)
+        {
+            cpu->stoppedDispatch = 0;
+            cpu->decode.stalled = 0;
+            //Shweta ::: added below two lines Try - remove if doesn't work
+            cpu->fetch.stalled = 0;
+        }
+        
         update_ROB(cpu->jbu2);
         cpu->insn_completed++;
         cpu->jbu2.has_insn = FALSE;
@@ -1523,7 +1613,8 @@ APEX_jbu2(APEX_CPU *cpu)
             print_stage_content("JBU2", &cpu->jbu2);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("JBU2: Empty\n");
@@ -1613,7 +1704,8 @@ APEX_memory1(APEX_CPU *cpu)
             print_stage_content("Memory1", &cpu->mem1);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("Memory1: Empty\n");
@@ -1660,7 +1752,8 @@ APEX_memory2(APEX_CPU *cpu)
             print_stage_content("Memory2", &cpu->mem2);
         }
     }
-    else{
+    else
+    {
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
             printf("Memory2: Empty\n");
@@ -1692,10 +1785,12 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
         return NULL;
     }
 
-    if(strcmp(operation, "showmem") != 0){
+    if (strcmp(operation, "showmem") != 0)
+    {
         cpu->operationCycles = cycles;
     }
-    else{
+    else
+    {
         if (cycles > 4096 || cycles < 0)
         {
             errorHandler("MemoryError");
@@ -1705,7 +1800,7 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
     }
 
     /*Shweta : If asked for simulation then set simulate property or else do display*/
-    if(strcmp(operation, "simulate") == 0)
+    if (strcmp(operation, "simulate") == 0)
     {
         cpu->simulate = 1;
     }
@@ -1713,18 +1808,17 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
     {
         cpu->simulate = 0;
     }
-    
+
     /* Initialize PC, Registers and all pipeline stages */
     cpu->pc = 4000;
     memset(cpu->regs, 0, sizeof(int) * REG_FILE_SIZE);
     memset(cpu->data_memory, 0, sizeof(int) * DATA_MEMORY_SIZE);
-    
+
     cpu->single_step = 0;
-    if(strcmp(operation, "single_step") == 0)
+    if (strcmp(operation, "single_step") == 0)
     {
         cpu->single_step = ENABLE_SINGLE_STEP;
     }
-    
 
     /* Parse input file and create code memory */
     cpu->code_memory = create_code_memory(filename, &cpu->code_memory_size);
@@ -1794,6 +1888,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("Clock Cycle #: %d\n", cpu->clock);
             printf("--------------------------------------------\n");
         }
+        printf("Program Counter #: %d\n", cpu->pc);
 
         /*Shweta : Stop execution if enconter HALT instruction 
         or excuted asked number of instructions cycles(for simulate or display)*/
@@ -1825,6 +1920,23 @@ void APEX_cpu_run(APEX_CPU *cpu)
                 if (entry.status != -1 && entry.rd_arch != -1)
                     updateRRAT(phy_rd, entry.rd_arch);
             }
+            else if(
+                !ROB_is_empty() &&
+                (strcmp(rob->head->entry.opcode_str, "CMP") == 0 || 
+                strcmp(rob->head->entry.opcode_str, "BZ") == 0  || 
+                strcmp(rob->head->entry.opcode_str, "BNZ") == 0 ||
+                strcmp(rob->head->entry.opcode_str, "JUMP") == 0))
+                {
+                    ROB_pop(); ///Pop only if status bit is 1 
+                }
+            else if(!ROB_is_empty() && strcmp(rob->head->entry.opcode_str, "HALT") == 0 && !cpu->mem1.has_insn && !cpu->mem2.has_insn){
+                ROB_pop();
+                printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
+                break;
+                //End of the simulation
+            }
+            
+            
         }
 
         // this is another cycle for memory access - d-cache
@@ -1839,17 +1951,19 @@ void APEX_cpu_run(APEX_CPU *cpu)
         APEX_int_fu(cpu);
         APEX_mul_fu(cpu);
 
+        /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
+        printQueue();
+        printROB();
+
+        issueInstruction(cpu);
+        // APEX_dispatch(cpu); //However this is not a stage; If your instruction is coming for dispatch it will surely go to IQ and ROB 
         // decode stage
         APEX_decode(cpu);
 
         // fetch stage
         APEX_fetch(cpu);
-
+        printAll(cpu);
         // print_reg_file(cpu);
-
-        /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
-        printQueue();
-        printROB();
 
         if (cpu->single_step)
         {
@@ -1863,8 +1977,10 @@ void APEX_cpu_run(APEX_CPU *cpu)
             }
         }
         cpu->clock++;
+        
     }
-    if(!cpu->single_step){
+    if (!cpu->single_step)
+    {
         printAll(cpu);
     }
 }
