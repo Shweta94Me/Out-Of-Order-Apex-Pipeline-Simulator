@@ -7,6 +7,7 @@ Shweta ::: Structure for URF, RAT, R-RAT
 #define URFMaxSize 48
 #define RATMaxSize 16
 #define RRATMaxSize 16
+#define CheckPointMaxSize 4
 
 #include "issue_q.h"
 
@@ -34,7 +35,26 @@ typedef struct JALStackEntry{
     int val;
 
 }JALStackEntry;
- 
+
+typedef struct checkpoint_RAT_entry{
+    int ratFree;
+    RAT Rat[RATMaxSize];
+}checkpoint_RAT_entry;
+
+typedef struct checkpoint_RAT
+{
+    checkpoint_RAT_entry entry;
+}checkpoint_RAT;
+
+typedef struct checkpoint_URF_entry{
+    int urfFree;
+    URF Urf[URFMaxSize];
+}checkpoint_URF_entry;
+
+typedef struct checkpoint_URF{
+    checkpoint_URF_entry entry;
+}checkpoint_URF;
+
 // A structure to represent a stack
 typedef struct StackNode {
     JALStackEntry data;
@@ -45,11 +65,20 @@ URF urf[URFMaxSize];
 RAT rat[RATMaxSize];
 RRAT rrat[RRATMaxSize];
 
+
+checkpoint_RAT checkpointRat[CheckPointMaxSize];
+checkpoint_URF checkpointUrf[CheckPointMaxSize];
+
 StackNode* jalstk;
 
 void initializeURF();
 void initializeRAT();
 void initializeRRAT();
+
+void initializeCheckPointRat();
+void initializeCheckPointURF();
+int insertCheckpointRat(RAT checkpoint_rat[]);
+int insertCheckpointURF(URF checkpoint_urf[]);
 
 int traverseURF();
 int allocate_phy_dest_RAT(int rd);
