@@ -69,6 +69,8 @@ void printROB();
 void set_rob_mready_bit(int pc);
 ROB_entry ROB_pop();
 void forward_to_rob(int pc, int result_buffer);
+void ROB_squash_after_misprediction(ROB_entry_node *sch_node);
+
 #endif
 
 

@@ -2004,7 +2004,9 @@ void APEX_cpu_run(APEX_CPU *cpu)
                  strcmp(rob->head->entry.opcode_str, "BNZ") == 0 ||
                  strcmp(rob->head->entry.opcode_str, "JUMP") == 0))
             {
-                ROB_pop(); ///Pop only if status bit is 1
+                ROB_entry entry = ROB_pop(); ///Pop only if status bit is 1
+                if(entry.status != -1)
+                    BIS_pop();
             }
             else if (!ROB_is_empty() && strcmp(rob->head->entry.opcode_str, "HALT") == 0 && !cpu->mem1.has_insn && !cpu->mem2.has_insn)
             {

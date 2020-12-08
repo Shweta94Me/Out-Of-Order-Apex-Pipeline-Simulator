@@ -125,3 +125,16 @@ int BTB_update_target_addr(int pc, int target_addr)
     }
     return -1;
 }
+
+//Return branch_tag for squash instruction
+BIS_entry BIS_squash()
+{
+    BIS_entry entry;
+    
+    entry = bis->bis_entry[bis->top];
+
+    bis->top = (bis->top - 1 + BIS_SIZE) % BIS_SIZE;
+    bis->size--;
+
+    return entry;    
+}
