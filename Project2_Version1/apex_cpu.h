@@ -121,9 +121,13 @@ typedef struct APEX_CPU
     CPU_Stage writeback;
 } APEX_CPU;
 
+int print_memory_address[50];
+int index_mem_add;
+
 APEX_Instruction *create_code_memory(const char *filename, int *size);
 APEX_CPU *APEX_cpu_init(const char *filename, const char *operation, const int cycles); /*Shweta : Updated the definition*/
 void APEX_cpu_run(APEX_CPU *cpu);
 void APEX_cpu_stop(APEX_CPU *cpu);
 void printAll(APEX_CPU *cpu);
+void print_data_memory(APEX_CPU* cpu);
 #endif
