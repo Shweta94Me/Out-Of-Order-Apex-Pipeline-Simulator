@@ -58,5 +58,6 @@ int BTB_is_empty();
 int BTB_lookup(int pc);
 int BTB_entry_exist(int pc);
 int BTB_push(int pc);
+int BTB_update_target_addr(int pc, int target_addr);
 
 #endif

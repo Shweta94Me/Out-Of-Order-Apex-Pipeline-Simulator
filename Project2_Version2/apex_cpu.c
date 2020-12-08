@@ -614,7 +614,7 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
 
     entry.imm = cpu->decode.imm;
 
-    if(strcmp(cpu->decode.opcode_str, "HALT") == 0)
+    if (strcmp(cpu->decode.opcode_str, "HALT") == 0)
         entry.status = 1;
     else
         entry.status = 0;
@@ -625,7 +625,6 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
     entry.mready = mready;
 
     entry.branch_tag = cpu->decode.branch_tag;
-
 
     return entry;
 }
@@ -752,7 +751,7 @@ void dispatch(APEX_CPU *cpu)
         else if (cpu->decode.fu_type == JBU_FU)
         {
             //Check if BTB entry exist for this branch else create a new one
-            if(!BTB_entry_exist(cpu->decode.pc))
+            if (!BTB_entry_exist(cpu->decode.pc))
             {
                 BTB_push(cpu->decode.pc);
             }
@@ -767,13 +766,13 @@ void dispatch(APEX_CPU *cpu)
             // adding instruction to rob
             add_instr_to_ROB(cpu, 0);
 
-            //Add ROB tail pointer to newly created BIS entry 
+            //Add ROB tail pointer to newly created BIS entry
             bis->bis_entry[branch_tag].rob_entry = rob->tail;
 
             ///Now Checkpoint the RAT and URF table and update the BIS entry to point new created checkpoint tables
             ///Siddhesh is working on it now
-
-            cpu->stoppedDispatch = 1;
+            if(strcmp(cpu->decode.opcode_str, "JUMP") == 0 || strcmp(cpu->decode.opcode_str, "JAL") == 0)
+                cpu->stoppedDispatch = 1;
             cpu->decode.has_insn = FALSE;
         }
     }
@@ -1029,6 +1028,10 @@ void renameRegister(APEX_CPU *cpu)
     }
 }
 
+void flush(int branch_tag, int target_addr)
+{
+
+}
 /*Utility functions end*/
 
 /*
@@ -1069,10 +1072,9 @@ APEX_fetch(APEX_CPU *cpu)
         cpu->fetch.rs3_phy_res = -1;
         cpu->fetch.imm = current_ins->imm;
 
-
         //Lookup in BTB for this branch instruction
         int target_addrs = BTB_lookup(cpu->fetch.pc); //Pass current stage pc
-        if(target_addrs != -1)
+        if (target_addrs != -1)
             cpu->pc = target_addrs;
         else
             cpu->pc += 4; /* Update PC for next instruction */
@@ -1141,118 +1143,129 @@ APEX_decode(APEX_CPU *cpu)
         /* Read operands from register file based on the instruction type */
         switch (cpu->decode.opcode)
         {
-            case OPCODE_ADD:
-            case OPCODE_SUB:
-            case OPCODE_AND:
-            case OPCODE_OR:
-            case OPCODE_XOR:
-            case OPCODE_MOVC:
-            case OPCODE_ADDL:
-            case OPCODE_SUBL:
-            case OPCODE_CMP:
+        case OPCODE_ADD:
+        case OPCODE_SUB:
+        case OPCODE_AND:
+        case OPCODE_OR:
+        case OPCODE_XOR:
+        case OPCODE_MOVC:
+        case OPCODE_ADDL:
+        case OPCODE_SUBL:
+        case OPCODE_CMP:
+        {
+            cpu->decode.fu_type = Int_FU;
+            if (!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
             {
-                cpu->decode.fu_type = Int_FU;
-                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                renameRegister(cpu);
+                if (!cpu->decode.stalled)
                 {
-                    renameRegister(cpu);
-                    if(!cpu->decode.stalled)
-                    {
-                        dispatch(cpu);
-                    }
-                    else{
-                        cpu->decode.stalled = 1;
-                    }
+                    dispatch(cpu);
                 }
-                else{
-                        cpu->decode.stalled = 1;
-                    }
-                break;
+                else
+                {
+                    cpu->decode.stalled = 1;
+                }
             }
+            else
+            {
+                cpu->decode.stalled = 1;
+            }
+            break;
+        }
 
-            case OPCODE_LOAD:
-            case OPCODE_LDR:
-            case OPCODE_STORE:
-            case OPCODE_STR:
+        case OPCODE_LOAD:
+        case OPCODE_LDR:
+        case OPCODE_STORE:
+        case OPCODE_STR:
+        {
+            cpu->decode.fu_type = Mem_FU;
+            if (!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
             {
-                cpu->decode.fu_type = Mem_FU;
-                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                renameRegister(cpu);
+                if (!cpu->decode.stalled)
                 {
-                    renameRegister(cpu);
-                    if(!cpu->decode.stalled)
-                    {
-                        dispatch(cpu);
-                    }
-                    else{
-                        cpu->decode.stalled = 1;
-                    }
+                    dispatch(cpu);
                 }
-                else{
-                        cpu->decode.stalled = 1;
-                    }
-                break;
+                else
+                {
+                    cpu->decode.stalled = 1;
+                }
             }
+            else
+            {
+                cpu->decode.stalled = 1;
+            }
+            break;
+        }
 
-            case OPCODE_MUL:
+        case OPCODE_MUL:
+        {
+            cpu->decode.fu_type = Mul_FU;
+            if (!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
             {
-                cpu->decode.fu_type = Mul_FU;
-                if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                renameRegister(cpu);
+                if (!cpu->decode.stalled)
                 {
-                    renameRegister(cpu);
-                    if(!cpu->decode.stalled)
-                    {
-                        dispatch(cpu);
-                    }
-                    else{
-                        cpu->decode.stalled = 1;
-                    }
+                    dispatch(cpu);
                 }
-                else{
-                        cpu->decode.stalled = 1;
-                    }
-                break;
+                else
+                {
+                    cpu->decode.stalled = 1;
+                }
             }
+            else
+            {
+                cpu->decode.stalled = 1;
+            }
+            break;
+        }
 
-            case OPCODE_HALT:
+        case OPCODE_HALT:
+        {
+            cpu->decode.fu_type = Int_FU;
+            if (!cpu->decode.stalled)
             {
-                cpu->decode.fu_type = Int_FU;
-                if(!cpu->decode.stalled){
-                    if(!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch){
-                        dispatch(cpu);
-                    }
-                    else{
-                        cpu->decode.stalled = 1;
-                    }
+                if (!isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch)
+                {
+                    dispatch(cpu);
                 }
-                break;
+                else
+                {
+                    cpu->decode.stalled = 1;
+                }
             }
+            break;
+        }
 
-            case OPCODE_BZ:
-            case OPCODE_BNZ:
-            case OPCODE_JAL:
-            case OPCODE_JUMP:
+        case OPCODE_BZ:
+        case OPCODE_BNZ:
+        case OPCODE_JAL:
+        case OPCODE_JUMP:
+        {
+            cpu->decode.fu_type = JBU_FU;
+            int BTB_decision = 0;
+            if (BTB_entry_exist(cpu->decode.pc) == -1 && BTB_is_full())
             {
-                cpu->decode.fu_type = JBU_FU;
-                int BTB_decision = 0;
-                if(BTB_entry_exist(cpu->decode.pc) == -1 && BTB_is_full())
-                {
-                    BTB_decision = 1; ///Rename and dispatching should not happen
-                }
-                if(!BTB_decision && !isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch && !BIS_is_full())
-                {
-                    renameRegister(cpu);
-                    if(!cpu->decode.stalled)
-                    {
-                        dispatch(cpu);
-                    }
-                    else{
-                        cpu->decode.stalled = 1;
-                    }
-                }
-                else{
-                        cpu->decode.stalled = 1;
-                    }
-                break;
+                BTB_decision = 1; ///Rename and dispatching should not happen
             }
+            if (!BTB_decision && !isQueueFull() && !ROB_is_full() && !cpu->stoppedDispatch && !BIS_is_full())
+            {
+                renameRegister(cpu);
+                if (!cpu->decode.stalled)
+                {
+                    dispatch(cpu);
+                }
+                else
+                {
+                    cpu->decode.stalled = 1;
+                }
+            }
+            else
+            {
+                cpu->decode.stalled = 1;
+            }
+            break;
+        }
         }
         if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
         {
@@ -1479,6 +1492,15 @@ APEX_mul_fu(APEX_CPU *cpu)
 static void
 APEX_jbu1(APEX_CPU *cpu)
 {
+    /*Shweta ::: 
+            Decision for misprediction
+            1. Set the target address
+            2. BZ - If history bit = 0 and zero flag is set ---> Mispredicted branch ---> Flush + bring instr from new target address
+            3. BZ - If history bit = 1 and zero flag is not set ---> Mispredicted branch ---> Flush + bring instr from new target address
+            4. Not a mispredicted branch --> Mean our prediction is correct --> do nothing your good to move
+            5. If instrc is BZ and zero flag is set --> set the history bit = 1 else 0
+            6. If instrc is BNZ and zero flag is not set --> set the history bit = 1 else 0
+            */
     if (cpu->jbu1.has_insn)
     {
         switch (cpu->jbu1.opcode)
@@ -1495,38 +1517,31 @@ APEX_jbu1(APEX_CPU *cpu)
 
         case OPCODE_BZ:
         {
-            
-            if (cpu->zero_flag == TRUE)
+            //Update the BTB target address
+            int btb_entry_idx = BTB_update_target_addr(cpu->jbu1.pc, cpu->jbu1.pc + cpu->jbu1.imm);
+
+            if ((btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 0 && cpu->zero_flag == TRUE) ||
+                (btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 1 && cpu->zero_flag == FALSE))
             {
-                /* Calculate new PC, and send it to fetch unit */
-                cpu->pc = cpu->jbu1.pc + cpu->jbu1.imm;
+                //Mispredicted branch
+                //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
+                //bring new instruction with new target address
+                flush(cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs);
 
-                /* Since we are using reverse callbacks for pipeline stages, 
-                            * this will prevent the new instruction from being fetched in the current cycle*/
-                cpu->fetch_from_next_cycle = TRUE;
-
-                /* Flush previous stages */
-                cpu->decode.has_insn = FALSE;
-
-                /* Make sure fetch stage is enabled to start fetching from new PC */
-                cpu->fetch.has_insn = TRUE;
-                if(cpu->stoppedDispatch)
-            {
-                cpu->stoppedDispatch = 0;
-                cpu->decode.stalled = 0;
-                //Shweta ::: added below two lines Try - remove if doesn't work
-                cpu->fetch.stalled = 0;
+                //For future prediction
+                if (cpu->zero_flag == TRUE)
+                {
+                    btb->btb_entry[btb_entry_idx].branch_direction = 1;
+                }
+                else
+                {
+                    btb->btb_entry[btb_entry_idx].branch_direction = 0;
+                }
             }
-            }
+            //Prediction was correct -- Go with usual flow
             /*Shweta ::: Open for dispatching*/
             update_ROB(cpu->jbu1);
-            if(cpu->stoppedDispatch)
-            {
-                cpu->stoppedDispatch = 0;
-                cpu->decode.stalled = 0;
-                //Shweta ::: added below two lines Try - remove if doesn't work
-                // cpu->fetch.stalled = 0;
-            }
+            //No need to unstalled decode or fetch stage as we didn't stop dispatch
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1534,37 +1549,30 @@ APEX_jbu1(APEX_CPU *cpu)
 
         case OPCODE_BNZ:
         {
-            if (cpu->zero_flag == FALSE)
+            //Update the BTB target address
+            int btb_entry_idx = BTB_update_target_addr(cpu->jbu1.pc, cpu->jbu1.pc + cpu->jbu1.imm);
+
+            if ((btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 0 && cpu->zero_flag == FALSE) ||
+                (btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 1 && cpu->zero_flag == TRUE))
             {
-                /* Calculate new PC, and send it to fetch unit */
-                cpu->pc = cpu->jbu1.pc + cpu->jbu1.imm;
-
-                /* Since we are using reverse callbacks for pipeline stages, 
-                            * this will prevent the new instruction from being fetched in the current cycle*/
-                cpu->fetch_from_next_cycle = TRUE;
-
-                /* Flush previous stages */
-                cpu->decode.has_insn = FALSE;
-
-                /* Make sure fetch stage is enabled to start fetching from new PC */
-                cpu->fetch.has_insn = TRUE;
-                if(cpu->stoppedDispatch)
+                //Mispredicted branch
+                //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
+                //bring new instruction with new target address
+                flush(cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs);
+                //For future prediction
+                if (cpu->zero_flag == FALSE)
                 {
-                    cpu->stoppedDispatch = 0;
-                    cpu->decode.stalled = 0;
-                    //Shweta ::: added below two lines Try - remove if doesn't work
-                    cpu->fetch.stalled = 0;
+                    btb->btb_entry[btb_entry_idx].branch_direction = 1;
+                }
+                else
+                {
+                    btb->btb_entry[btb_entry_idx].branch_direction = 0;
                 }
             }
+            //Prediction was correct -- Go with usual flow
             /*Shweta ::: Open for dispatching*/
             update_ROB(cpu->jbu1);
-            if(cpu->stoppedDispatch)
-            {
-                cpu->stoppedDispatch = 0;
-                cpu->decode.stalled = 0;
-                //Shweta ::: added below two lines Try - remove if doesn't work
-                //cpu->fetch.stalled = 0;
-            }
+            //No need to unstalled decode or fetch stage as we didn't stop dispatch
             cpu->insn_completed++;
             cpu->jbu1.has_insn = FALSE;
             break;
@@ -1592,66 +1600,66 @@ APEX_jbu2(APEX_CPU *cpu)
     {
         switch (cpu->jbu2.opcode)
         {
-            case OPCODE_JUMP:
+        case OPCODE_JUMP:
+        {
+            int reg_tag = jal_peek(jalstk);
+            if (reg_tag != INT_MIN && reg_tag == cpu->jbu2.rs1)
             {
-                int reg_tag = jal_peek(jalstk);
-                if (reg_tag != INT_MIN && reg_tag == cpu->jbu2.rs1)
-                {
-                    int reg_val = jal_pop(&jalstk);
-                    cpu->jbu2.rs1_value = reg_val;
-                }
-
-                /*Shweta ::: Calculate the new PC and send it to fetch unit*/
-                cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
-
-                cpu->fetch_from_next_cycle = TRUE;
-
-                /*Flush previous stages*/
-                cpu->decode.has_insn = FALSE;
-
-                /*Enable fetch stage to start fetching from new PC*/
-                cpu->fetch.has_insn = TRUE;
-
-                update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
-                break;
+                int reg_val = jal_pop(&jalstk);
+                cpu->jbu2.rs1_value = reg_val;
             }
 
-            case OPCODE_JAL:
-            {
-                cpu->jbu2.result_buffer = cpu->jbu2.pc + 4;
-                cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+            /*Shweta ::: Calculate the new PC and send it to fetch unit*/
+            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
 
-                broadcastData(cpu, cpu->jbu2.result_buffer, cpu->jbu2.rd_phy_res, JBU_FU); // only when completed 3 cycles
+            cpu->fetch_from_next_cycle = TRUE;
 
-                /* Copy data from execute latch to memory latch*/
-                update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+            /*Flush previous stages*/
+            cpu->decode.has_insn = FALSE;
 
-                JALStackEntry entry;
-                entry.reg_tag = cpu->jbu2.rd;
-                entry.val = cpu->jbu2.result_buffer;
-                jal_push(&jalstk, entry);
+            /*Enable fetch stage to start fetching from new PC*/
+            cpu->fetch.has_insn = TRUE;
 
-                /* Since we are using reverse callbacks for pipeline stages, 
+            update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+            break;
+        }
+
+        case OPCODE_JAL:
+        {
+            cpu->jbu2.result_buffer = cpu->jbu2.pc + 4;
+            cpu->pc = cpu->jbu2.rs1_value + cpu->jbu2.imm;
+
+            broadcastData(cpu, cpu->jbu2.result_buffer, cpu->jbu2.rd_phy_res, JBU_FU); // only when completed 3 cycles
+
+            /* Copy data from execute latch to memory latch*/
+            update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+
+            JALStackEntry entry;
+            entry.reg_tag = cpu->jbu2.rd;
+            entry.val = cpu->jbu2.result_buffer;
+            jal_push(&jalstk, entry);
+
+            /* Since we are using reverse callbacks for pipeline stages, 
                                 * this will prevent the new instruction from being fetched in the current cycle*/
-                cpu->fetch_from_next_cycle = TRUE;
+            cpu->fetch_from_next_cycle = TRUE;
 
-                /* Flush previous stages */
-                cpu->decode.has_insn = FALSE;
+            /* Flush previous stages */
+            cpu->decode.has_insn = FALSE;
 
-                /* Make sure fetch stage is enabled to start fetching from new PC */
-                cpu->fetch.has_insn = TRUE;
-            }
+            /* Make sure fetch stage is enabled to start fetching from new PC */
+            cpu->fetch.has_insn = TRUE;
+        }
         }
 
         /*Shweta ::: Open for dispatching*/
-        if(cpu->stoppedDispatch)
+        if (cpu->stoppedDispatch)
         {
             cpu->stoppedDispatch = 0;
             cpu->decode.stalled = 0;
             //Shweta ::: added below two lines Try - remove if doesn't work
             cpu->fetch.stalled = 0;
         }
-        
+
         update_ROB(cpu->jbu2);
         cpu->insn_completed++;
         cpu->jbu2.has_insn = FALSE;
@@ -1901,7 +1909,7 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
     // the cpu just try to keep seperate.
     createROB();
 
-    //Initialize BIS 
+    //Initialize BIS
     createBIS();
 
     //Initialize BTB
@@ -1980,23 +1988,22 @@ void APEX_cpu_run(APEX_CPU *cpu)
                 if (entry.status != -1 && entry.rd_arch != -1)
                     updateRRAT(phy_rd, entry.rd_arch);
             }
-            else if(
+            else if (
                 !ROB_is_empty() &&
-                (strcmp(rob->head->entry.opcode_str, "CMP") == 0 || 
-                strcmp(rob->head->entry.opcode_str, "BZ") == 0  || 
-                strcmp(rob->head->entry.opcode_str, "BNZ") == 0 ||
-                strcmp(rob->head->entry.opcode_str, "JUMP") == 0))
-                {
-                    ROB_pop(); ///Pop only if status bit is 1 
-                }
-            else if(!ROB_is_empty() && strcmp(rob->head->entry.opcode_str, "HALT") == 0 && !cpu->mem1.has_insn && !cpu->mem2.has_insn){
+                (strcmp(rob->head->entry.opcode_str, "CMP") == 0 ||
+                 strcmp(rob->head->entry.opcode_str, "BZ") == 0 ||
+                 strcmp(rob->head->entry.opcode_str, "BNZ") == 0 ||
+                 strcmp(rob->head->entry.opcode_str, "JUMP") == 0))
+            {
+                ROB_pop(); ///Pop only if status bit is 1
+            }
+            else if (!ROB_is_empty() && strcmp(rob->head->entry.opcode_str, "HALT") == 0 && !cpu->mem1.has_insn && !cpu->mem2.has_insn)
+            {
                 ROB_pop();
                 printf("APEX_CPU: Simulation Complete, cycles = %d instructions = %d\n", cpu->clock, cpu->insn_completed);
                 break;
                 //End of the simulation
             }
-            
-            
         }
 
         // this is another cycle for memory access - d-cache
@@ -2016,7 +2023,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
         printROB();
 
         issueInstruction(cpu);
-        // APEX_dispatch(cpu); //However this is not a stage; If your instruction is coming for dispatch it will surely go to IQ and ROB 
+        // APEX_dispatch(cpu); //However this is not a stage; If your instruction is coming for dispatch it will surely go to IQ and ROB
         // decode stage
         APEX_decode(cpu);
 
@@ -2037,7 +2044,6 @@ void APEX_cpu_run(APEX_CPU *cpu)
             }
         }
         cpu->clock++;
-        
     }
     if (!cpu->single_step)
     {
