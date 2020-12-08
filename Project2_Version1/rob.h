@@ -64,7 +64,7 @@ void ROB_push(ROB_entry);
 int ROB_headEntryValid();
 int rob_head_peek();
 void printROB();
-void set_rob_mready_bit(int pc);
+void set_rob_mready_bit(int pc, int rs1Val, int rs2Val, int rs3Val);
 ROB_entry ROB_pop();
 void forward_to_rob(int pc, int result_buffer);
 #endif

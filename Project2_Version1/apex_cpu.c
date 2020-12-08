@@ -132,6 +132,16 @@ print_stage_content(const char *name, const CPU_Stage *stage)
     printf("\n");
 }
 
+void printMemoryAddress(APEX_CPU *cpu)
+{
+    printf("============== DETAILS OF DATA MEMORY STATE =============\n");
+    for(int i=0;i<50;i++){
+        if(print_memory_address[i] != -1){
+            printf("D[%d] = %d \n",print_memory_address[i],cpu->data_memory[print_memory_address[i]]);
+        }
+    }
+}
+
 /* Debug function which prints the register file
  *
  * Note: You are not supposed to edit this function
@@ -449,7 +459,8 @@ void issueInstruction(APEX_CPU *cpu)
 
         if (temp != NULL && temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
-            set_rob_mready_bit(temp->data.pc);
+
+            set_rob_mready_bit(temp->data.pc, temp->data.rs1_value,temp->data.rs2_value, temp->data.rs3_value);
 
             // delete node
             if (temp->next == NULL)
@@ -612,7 +623,7 @@ ROB_entry create_ROB_data(APEX_CPU *cpu, int mready)
 
     entry.imm = cpu->decode.imm;
 
-    if(strcmp(cpu->decode.opcode_str, "HALT") == 0)
+    if(strcmp(cpu->decode.opcode_str, "HALT") == 0 || mready == 1)
         entry.status = 1;
     else
         entry.status = 0;
@@ -677,7 +688,7 @@ void pass_to_mem_stage(APEX_CPU *cpu, ROB_entry entry)
 void printMemory(APEX_CPU *cpu)
 {
     printf("===============STATE OF DATA MEMORY===============\n");
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < DATA_MEMORY_SIZE; i++)
     {
         printf("|\t\tD[%d]\t\t|\t\tData Value = %d\t\t|\n", i, cpu->data_memory[i]);
     }
@@ -1740,6 +1751,8 @@ APEX_memory2(APEX_CPU *cpu)
         {
             /*Store data from destination register to data memory */
             cpu->data_memory[cpu->mem2.memory_address] = cpu->mem2.rs1_value;
+            print_memory_address[index_mem_add] = cpu->mem2.memory_address;
+            index_mem_add++;
             break;
         }
         }
@@ -1842,6 +1855,12 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
 
     // Initialize JalStack
     jalstk = NULL;
+
+    //Init memory stack
+    index_mem_add=0;
+    for(int i=0;i<50;i++){
+        print_memory_address[i]=-1;
+    }
 
     //Initialize ROB. The ROB will be accessed from here but like issue q we have not assigned it to
     // the cpu just try to keep seperate.
@@ -1962,7 +1981,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
 
         // fetch stage
         APEX_fetch(cpu);
-        printAll(cpu);
+
         // print_reg_file(cpu);
 
         if (cpu->single_step)
@@ -1987,11 +2006,12 @@ void APEX_cpu_run(APEX_CPU *cpu)
 
 void printAll(APEX_CPU *cpu)
 {
-    printMemory(cpu);
+    // printMemory(cpu);
     printURF();
     printRAT();
     printRRAT();
     printArchToPhys();
+    printMemoryAddress(cpu);
 }
 
 /*
