@@ -773,6 +773,15 @@ void dispatch(APEX_CPU *cpu)
             ///Siddhesh is working on it now
             if(strcmp(cpu->decode.opcode_str, "JUMP") == 0 || strcmp(cpu->decode.opcode_str, "JAL") == 0)
                 cpu->stoppedDispatch = 1;
+
+            // checkpoint rat and urf and provide the index
+            int rat_checkpoint_idx = insertCheckpointRat();
+            int urf_checkpoint_idx = insertCheckpointURF();
+
+            if(rat_checkpoint_idx != -1 && urf_checkpoint_idx != -1){
+                bis->bis_entry[branch_tag].checkpoint_rat_idx = rat_checkpoint_idx;
+                bis->bis_entry[branch_tag].checkpoint_urf_idx = urf_checkpoint_idx;
+            }
             cpu->decode.has_insn = FALSE;
         }
     }

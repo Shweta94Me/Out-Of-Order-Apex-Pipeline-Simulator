@@ -61,7 +61,7 @@ void initializeCheckPointURF(){
 }
 
 // if entry possible then index in checkpoint table rat else -1
-int insertCheckpointRat(RAT checkpoint_rat[]){
+int insertCheckpointRat(){
 
     // return shweta the index of where this checkpoint has insert in the array
     // if there is some space return -1
@@ -71,7 +71,7 @@ int insertCheckpointRat(RAT checkpoint_rat[]){
     // copying all the values
     for (int i = 0; i < RATMaxSize; i++)
     {
-       entry.Rat[i].phy_reg_num = checkpoint_rat[i].phy_reg_num;
+       entry.Rat[i].phy_reg_num = rat[i].phy_reg_num;
     }
     for (int i = 0; i < CheckPointMaxSize; i++)
     {
@@ -83,17 +83,16 @@ int insertCheckpointRat(RAT checkpoint_rat[]){
     return -1;
 }
 
-int insertCheckpointURF(URF checkpoint_urf[]){
+int insertCheckpointURF(){
 
     checkpoint_URF_entry entry;
     entry.urfFree = 0; // making not free
 
     for (int i = 0; i < URFMaxSize ; i++)
     {
-        
-        entry.Urf[i].free = checkpoint_urf[i].free; //Intialize as free
-        entry.Urf[i].status =  checkpoint_urf[i].status; //Intialize as Invalid 
-        entry.Urf[i].value =  checkpoint_urf[i].value;
+        entry.Urf[i].free = urf[i].free; //Intialize as free
+        entry.Urf[i].status =  urf[i].status; //Intialize as Invalid 
+        entry.Urf[i].value =  urf[i].value;
     }
 
     for (int i = 0; i < CheckPointMaxSize; i++)
@@ -106,7 +105,53 @@ int insertCheckpointURF(URF checkpoint_urf[]){
     return -1;
 }
 
+// get checkpointed Rat based on index provided earlier during insert
+Return_RAT getCheckPointedRAT(int index){
 
+    Return_RAT chkptrat;
+    chkptrat.valid = 0;
+    if(index >= 0 && index < CheckPointMaxSize){
+        for (int i = 0; i < CheckPointMaxSize; i++)
+        {
+            if(i == index){
+                chkptrat.valid =1;
+                for (int i = 0; i < RATMaxSize; i++)
+                {
+                    chkptrat.checkpointrat[i].phy_reg_num = checkpointRat[i].entry.Rat->phy_reg_num;
+                }
+                checkpointRat[i].entry.ratFree = 1; //freeing up the rat entry
+                return chkptrat;
+            }
+        }
+    
+    }
+    return chkptrat;
+}
+
+// get checkpointed URF based on index provided earlier during insert
+Return_URF getCheckPointedURF(int index){
+    Return_URF check_point_urf;
+    check_point_urf.valid = 0;
+    if(index >= 0 && index < CheckPointMaxSize){
+
+        for (int i = 0; i < CheckPointMaxSize; i++)
+        {
+            if(i == index){
+                check_point_urf.valid = 1;
+                for (int i = 0; i < URFMaxSize; i++)
+                {
+                    check_point_urf.checkpointurf[i].free = checkpointUrf[i].entry.Urf->free;
+                    check_point_urf.checkpointurf[i].status = checkpointUrf[i].entry.Urf->status;
+                    check_point_urf.checkpointurf[i].value = checkpointUrf[i].entry.Urf->value;
+
+                }
+                checkpointUrf[i].entry.urfFree = 1; //freeing up the urf entry
+                return check_point_urf;
+            }
+        }
+    }
+    return check_point_urf;
+}
 
 //Check if URF has a free entry and return that free entry index
 
