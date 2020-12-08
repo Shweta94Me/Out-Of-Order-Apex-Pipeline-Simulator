@@ -110,3 +110,18 @@ int BTB_push(int pc)
     btb->size++;
     return 1;
 }
+
+int BTB_update_target_addr(int pc, int target_addr)
+{
+    for(int i = 0; i < BTB_SIZE; i++)
+    {
+        if(btb->btb_entry[i].branch_instrc_addr == pc)
+        {
+            //Branch instruction exists and says take the branch
+            //So return the store target address
+            btb->btb_entry[i].target_addrs = target_addr;
+            return i;
+        }
+    }
+    return -1;
+}
