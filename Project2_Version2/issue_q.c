@@ -104,6 +104,21 @@ void deQueueAnyNode(int val){
 	}
 }
 
+// specific to the input provided
+void deleteAllNodes(int branch_tag){
+
+	// struct node *temp = iq->front;
+    // struct node *prev = NULL;
+
+	// while (temp != NULL && !isQueueEmpty())
+    // {
+	// 	if(temp->data.branch_tag == branch_tag){
+	// 		// code needs to be completed
+	// 	}
+
+	// }
+}
+
 void printQueue()
 {
 	if(!isQueueEmpty()){

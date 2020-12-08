@@ -1037,10 +1037,42 @@ void renameRegister(APEX_CPU *cpu)
     }
 }
 
-void flush(int branch_tag, int target_addr)
-{
+void flushAllFU(APEX_CPU *cpu){
+    cpu->ex_int_fu.has_insn = 0;
+    cpu->ex_mul_fu.has_insn = 0;
+    cpu->mul_cycles = 0;
+}
+void flushDecode(APEX_CPU *cpu){
+    cpu->decode.has_insn = FALSE;
+}
+void flushFetch(APEX_CPU *cpu, int pc){
+
+     cpu->pc = pc;
+
+    cpu->fetch_from_next_cycle = TRUE;
+    
+    /*Enable fetch stage to start fetching from new PC*/
+    cpu->fetch.has_insn = TRUE;
 
 }
+
+// flushIq(int branch_tag){
+    
+// }
+
+void flush(int pc,int branch_tag, int target_addr, APEX_CPU *cpu)
+{
+
+    flushAllFU(cpu);
+    flushDecode(cpu);
+    flushFetch(cpu,pc);
+    // flushIq(branch_tag);
+}
+
+
+
+
+
 /*Utility functions end*/
 
 /*
@@ -1535,7 +1567,7 @@ APEX_jbu1(APEX_CPU *cpu)
                 //Mispredicted branch
                 //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
                 //bring new instruction with new target address
-                flush(cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs);
+                flush(cpu->jbu1.pc,cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs,cpu);
 
                 //For future prediction
                 if (cpu->zero_flag == TRUE)
@@ -1567,7 +1599,7 @@ APEX_jbu1(APEX_CPU *cpu)
                 //Mispredicted branch
                 //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
                 //bring new instruction with new target address
-                flush(cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs);
+                flush(cpu->jbu1.pc,cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs,cpu);
                 //For future prediction
                 if (cpu->zero_flag == FALSE)
                 {
