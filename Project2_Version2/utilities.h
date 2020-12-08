@@ -61,6 +61,20 @@ typedef struct StackNode {
     struct StackNode* next;
 }StackNode;
 
+
+
+typedef struct Return_RAT{
+    int valid;
+    RAT checkpointrat[RATMaxSize];
+}Return_RAT;
+
+typedef struct Return_URF{
+    int valid;
+    URF checkpointurf[URFMaxSize];
+}Return_URF;
+
+
+
 URF urf[URFMaxSize];
 RAT rat[RATMaxSize];
 RRAT rrat[RRATMaxSize];
@@ -77,8 +91,8 @@ void initializeRRAT();
 
 void initializeCheckPointRat();
 void initializeCheckPointURF();
-int insertCheckpointRat(RAT checkpoint_rat[]);
-int insertCheckpointURF(URF checkpoint_urf[]);
+int insertCheckpointRat();
+int insertCheckpointURF();
 
 int traverseURF();
 int allocate_phy_dest_RAT(int rd);

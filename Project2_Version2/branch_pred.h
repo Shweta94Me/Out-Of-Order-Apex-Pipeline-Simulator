@@ -22,7 +22,8 @@ typedef struct BIS_entry
 {
     int bis_tag;
     ROB_entry_node *rob_entry;
-    int checkpoint_idx;
+    int checkpoint_rat_idx;
+    int checkpoint_urf_idx;
 }BIS_entry;
 
 
