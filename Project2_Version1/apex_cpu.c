@@ -1907,7 +1907,8 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("Clock Cycle #: %d\n", cpu->clock);
             printf("--------------------------------------------\n");
         }
-        printf("Program Counter #: %d\n", cpu->pc);
+        if(!cpu->simulate)
+            printf("Program Counter #: %d\n", cpu->pc);
 
         /*Shweta : Stop execution if enconter HALT instruction 
         or excuted asked number of instructions cycles(for simulate or display)*/
@@ -1971,8 +1972,10 @@ void APEX_cpu_run(APEX_CPU *cpu)
         APEX_mul_fu(cpu);
 
         /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
-        printQueue();
-        printROB();
+        if(!cpu->simulate){
+            printQueue();
+            printROB();
+        }
 
         issueInstruction(cpu);
         // APEX_dispatch(cpu); //However this is not a stage; If your instruction is coming for dispatch it will surely go to IQ and ROB 
@@ -1998,18 +2001,15 @@ void APEX_cpu_run(APEX_CPU *cpu)
         cpu->clock++;
         
     }
-    if (!cpu->single_step)
-    {
-        printAll(cpu);
-    }
+    printAll(cpu);
 }
 
 void printAll(APEX_CPU *cpu)
 {
     // printMemory(cpu);
     printURF();
-    printRAT();
-    printRRAT();
+    //printRAT();
+    //printRRAT();
     printArchToPhys();
     printMemoryAddress(cpu);
 }
