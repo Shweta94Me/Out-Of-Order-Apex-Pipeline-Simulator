@@ -158,13 +158,15 @@ void forward_to_rob(int pc, int result_buffer)
 // if all the source register are avialble either at the time of dispatch or made avilable when the same
 // entry of load store is in iq and after broadcast all the src are avialable now set the m ready bit
 // discard the entry from iq
-void set_rob_mready_bit(int pc)
-{
+void set_rob_mready_bit(int pc, int rs1Val, int rs2Val, int rs3Val){
     ROB_entry_node *node = rob->head;
     while (node)
     {
         if (pc == node->entry.pc_value)
         {
+            node->entry.rs1_value = rs1Val;
+            node->entry.rs2_value = rs2Val;
+            node->entry.rs3_value = rs3Val;
             node->entry.mready = 1;
             node->entry.status = 1;
             return;
@@ -172,6 +174,7 @@ void set_rob_mready_bit(int pc)
         node = node->next;
     }
 }
+
 void ROB_squash_after_misprediction(ROB_entry_node *sch_node)
 {
     if (ROB_is_empty())

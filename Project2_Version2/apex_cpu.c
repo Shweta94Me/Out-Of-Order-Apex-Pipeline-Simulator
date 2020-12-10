@@ -1066,9 +1066,9 @@ void flushFetch(APEX_CPU *cpu, int pc){
 
 }
 
-// flushIq(int branch_tag){
-    
-// }
+void flushIq(int branch_tag){
+    deleteAllNodes(branch_tag);
+}
 
 void flush(int pc,int branch_tag, int target_addr, APEX_CPU *cpu)
 {
@@ -1076,7 +1076,7 @@ void flush(int pc,int branch_tag, int target_addr, APEX_CPU *cpu)
     flushAllFU(cpu);
     flushDecode(cpu);
     flushFetch(cpu,pc);
-    // flushIq(branch_tag);
+    flushIq(branch_tag);
 }
 
 
