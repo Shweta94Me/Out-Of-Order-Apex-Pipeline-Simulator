@@ -88,6 +88,8 @@ void enQueue(node_attr data);
 // delete the entry from q based on program counter
 void deQueueAnyNode(int val);
 
+void deleteAllNodes(int branch_tag);
+
 #endif
 
 

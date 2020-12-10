@@ -9,7 +9,7 @@ Siddhesh ::: Implementation for Issue Queue
 
 node *newNode(node_attr data)
 {
-	node *temp = (node*)malloc(sizeof(node));
+	node *temp = (node *)malloc(sizeof(node));
 	temp->data = data;
 	temp->next = NULL;
 	return temp;
@@ -17,11 +17,10 @@ node *newNode(node_attr data)
 
 void createQueue()
 {
-	iq = (Queue*)malloc(sizeof(Queue));
+	iq = (Queue *)malloc(sizeof(Queue));
 	iq->front = iq->rear = NULL;
 	iq->sizeOfQueue = 0;
 }
-
 
 int isQueueFull()
 {
@@ -43,7 +42,8 @@ int isQueueEmpty()
 
 void enQueue(node_attr data)
 {
-	if(!isQueueFull()){
+	if (!isQueueFull())
+	{
 
 		// struct node_attr data = createData(cpu);
 
@@ -59,20 +59,22 @@ void enQueue(node_attr data)
 		iq->rear = temp;
 		iq->sizeOfQueue++;
 	}
-	else{
+	else
+	{
 		// printf("Queue is Full");
 		return;
 	}
 	// return 1;
 }
 
-
-void deQueueAnyNode(int val){
-	if(!isQueueEmpty())
+void deQueueAnyNode(int val)
+{
+	if (!isQueueEmpty())
 	{
-		struct node* temp = iq->front, *prev;
+		struct node *temp = iq->front, *prev;
 
-		if(temp->data.pc == val){
+		if (temp->data.pc == val)
+		{
 			iq->front = iq->front->next;
 			iq->sizeOfQueue--;
 			if (iq->front == NULL)
@@ -82,49 +84,106 @@ void deQueueAnyNode(int val){
 			free(temp);
 			return;
 		}
-		
+
 		while (temp != NULL && temp->data.pc != val)
 		{
 			prev = temp;
 			temp = temp->next;
 		}
 
-		if (temp == NULL) return;
+		if (temp == NULL)
+			return;
 
 		prev->next = temp->next;
 		iq->sizeOfQueue--;
 		free(temp);
 
 		return;
-
 	}
-	else{
+	else
+	{
 		//printf("Queue is Empty");
 		return;
 	}
 }
 
-// specific to the input provided
-void deleteAllNodes(int branch_tag){
+// specific to the input provided // this is specicfically needed for branch  prediction squashing iq
+void deleteAllNodes(int branch_tag)
+{
+	struct node *temp = iq->front;
+    struct node *prev = NULL;
+	// delete node
+	while (temp != NULL && !isQueueEmpty())
+    {
+		int nodeDeleted = 0;
+		if (temp->next == NULL && temp->data.branch_tag == branch_tag)
+		{
+			if (prev == NULL)
+			{
+				//Only one node
+				iq->front = NULL;
+				iq->rear = NULL;
+				// free(temp);
+				temp = NULL;
+				iq->sizeOfQueue--;
+				nodeDeleted = 1;
+			}
+			else if(prev != NULL && temp->data.branch_tag == branch_tag)
+			{
+				//last Node
+				prev->next = temp->next;
+				// free(temp);
+				temp = NULL;
+				iq->rear = prev;
+				iq->sizeOfQueue--;
+				nodeDeleted = 1;
+			}
+		}
+		else if (temp->next != NULL)
+		{
+			if (prev == NULL && temp->data.branch_tag == branch_tag)
+			{
+				//first node
+				struct node *temp1 = temp->next;
+				temp->data = temp1->data;
+				temp->next = temp1->next;
+				free(temp1);
+				iq->sizeOfQueue--;
+				nodeDeleted = 1;
+			}
+			else if(prev != NULL && temp->data.branch_tag == branch_tag)
+			{
+				prev->next = temp->next;
+				free(temp);
+				temp = prev->next;
+				iq->sizeOfQueue--;
+				nodeDeleted = 1;
+			}
+		}
 
-	// struct node *temp = iq->front;
-    // struct node *prev = NULL;
-
-	// while (temp != NULL && !isQueueEmpty())
-    // {
-	// 	if(temp->data.branch_tag == branch_tag){
-	// 		// code needs to be completed
-	// 	}
-
-	// }
+		if (!nodeDeleted)
+        {
+            if (!isQueueEmpty())
+            {
+                prev = temp;
+                temp = temp->next;
+            }
+            else
+            {
+                temp = NULL;
+            }
+        }
+	}
+	
 }
 
 void printQueue()
 {
-	if(!isQueueEmpty()){
-		struct node* temp = iq->front;
+	if (!isQueueEmpty())
+	{
+		struct node *temp = iq->front;
 		printf("\nDetails of IQ (Issue Queue) State:");
-		while(temp)
+		while (temp)
 		{
 			printf("%d->", temp->data.pc);
 
@@ -136,12 +195,12 @@ void printQueue()
 	{
 		printf("Issue Queue is Empty. \n");
 	}
-	
 }
 
-// // Unit test code for Issue q 
+// // Unit test code for Issue q
 // gcc -o issueq_test issue_q.c   /// this command is for individual issue q testing
 //   ./issueq_test.exe
+
 
 // int main(){
 
@@ -149,59 +208,56 @@ void printQueue()
 
 // 	printf("Val -> %d \n ", iq->sizeOfQueue);  // 0
 // 	node_attr data1;
+// 	data1.branch_tag = 1;
 // 	data1.pc = 1;
 // 	enQueue(data1);
 
 // 	node_attr data2;
+// 	data2.branch_tag = 1;
 // 	data2.pc = 2;
 // 	enQueue(data2);
 
 // 	node_attr data3;
+// 	data3.branch_tag = 3;
 // 	data3.pc = 3;
 // 	enQueue(data3);
 
 // 	node_attr data4;
+// 	data4.branch_tag = 1;
 // 	data4.pc = 4;
 // 	enQueue(data4);
 
-// 	node_attr data5;
-// 	data5.pc = 5;
-// 	enQueue(data5);
-
-// 	node_attr data6;
-// 	data6.pc = 6;
-// 	enQueue(data6);
-
 // 	printf("Val -> %d \n ", iq->sizeOfQueue); // 5
 
-// 	deQueueAnyNode(2);
-// 	deQueueAnyNode(3);
-// 	deQueueAnyNode(5);
-// 	deQueueAnyNode(6);
+// 	// deQueueAnyNode(2);
+// 	// deQueueAnyNode(3);
+// 	// deQueueAnyNode(5);
+// 	// deQueueAnyNode(6);
+// 	deleteAllNodes(1);
 // 	printQueue();
-// 	deQueueAnyNode(1);
-// 	deQueueAnyNode(4);
+// 	// deQueueAnyNode(1);
+// 	// deQueueAnyNode(4);
 
 // 	printf("Val -> %d \n ", iq->sizeOfQueue); // 0
-	
 
 // 	node_attr data7;
+// 	data7.branch_tag = 1;
 // 	data7.pc = 7;
 // 	enQueue(data7);
 
 // 	node_attr data8;
+// 	data8.branch_tag = 1;
 // 	data8.pc = 8;
 // 	enQueue(data8);
 
 // 	printQueue();
-// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 2 
+// 	printf("Val -> %d \n ", iq->sizeOfQueue); // 2
 
-// 	deQueueAnyNode(8);
-// 	deQueueAnyNode(7);
+// 	// deQueueAnyNode(8);
+// 	// deQueueAnyNode(7);
+// 	deleteAllNodes(1);
 
 // 	printf("Val -> %d \n ", iq->sizeOfQueue); // 0
 
 // 	return 0;
 // }
-
-
