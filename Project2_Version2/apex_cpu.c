@@ -135,12 +135,14 @@ print_stage_content(const char *name, const CPU_Stage *stage)
 void printMemoryAddress(APEX_CPU *cpu)
 {
     printf("============== DETAILS OF DATA MEMORY STATE =============\n");
-    for(int i=0;i<50;i++){
-        if(print_memory_address[i] != -1){
-            printf("D[%d] = %d \n",print_memory_address[i],cpu->data_memory[print_memory_address[i]]);
+    for (int i = 0; i < 50; i++)
+    {
+        if (print_memory_address[i] != -1)
+        {
+            printf("D[%d] = %d \n", print_memory_address[i], cpu->data_memory[print_memory_address[i]]);
         }
     }
-}									 
+}
 
 /* Debug function which prints the register file
  *
@@ -375,6 +377,8 @@ void issueInstruction(APEX_CPU *cpu)
                     temp->data = temp1->data;
                     temp->next = temp1->next;
                     free(temp1);
+                    if(iq->sizeOfQueue == 2)
+                        iq->rear = temp;
                 }
                 else
                 {
@@ -447,6 +451,8 @@ void issueInstruction(APEX_CPU *cpu)
                     temp->data = temp1->data;
                     temp->next = temp1->next;
                     free(temp1);
+                    if(iq->sizeOfQueue == 2)
+                        iq->rear = temp;
                 }
                 else
                 {
@@ -461,7 +467,7 @@ void issueInstruction(APEX_CPU *cpu)
 
         if (temp != NULL && temp->data.FU_Type == Mem_FU && temp->data.rs1_ready && temp->data.rs2_ready && temp->data.rs3_ready)
         {
-            set_rob_mready_bit(temp->data.pc, temp->data.rs1_value,temp->data.rs2_value, temp->data.rs3_value);
+            set_rob_mready_bit(temp->data.pc, temp->data.rs1_value, temp->data.rs2_value, temp->data.rs3_value);
 
             // delete node
             if (temp->next == NULL)
@@ -492,6 +498,8 @@ void issueInstruction(APEX_CPU *cpu)
                     temp->data = temp1->data;
                     temp->next = temp1->next;
                     free(temp1);
+                    if(iq->sizeOfQueue == 2)
+                        iq->rear = temp;
                 }
                 else
                 {
@@ -531,6 +539,8 @@ void issueInstruction(APEX_CPU *cpu)
             cpu->jbu1.rs3_value = temp->data.rs3_value;
             cpu->jbu1.rs3_ready = temp->data.rs3_ready;
 
+            cpu->jbu1.branch_tag = temp->data.branch_tag;
+
             // delete node
             if (temp->next == NULL)
             {
@@ -560,6 +570,8 @@ void issueInstruction(APEX_CPU *cpu)
                     temp->data = temp1->data;
                     temp->next = temp1->next;
                     free(temp1);
+                    if(iq->sizeOfQueue == 2)
+                        iq->rear = temp;
                 }
                 else
                 {
@@ -761,11 +773,15 @@ void dispatch(APEX_CPU *cpu)
         else if (cpu->decode.fu_type == JBU_FU)
         {
             //Check if BTB entry exist for this branch else create a new one
-            if (!BTB_entry_exist(cpu->decode.pc))
+            if (strcmp(cpu->decode.opcode_str, "BZ") == 0 || strcmp(cpu->decode.opcode_str, "BNZ") == 0)
             {
-                BTB_push(cpu->decode.pc);
+                if (BTB_entry_exist(cpu->decode.pc) == -1)
+                {
+                    BTB_push(cpu->decode.pc);
+                }
+                BIS_incr_top(); //Create new entry in BIS with incremented top index
             }
-            BIS_incr_top(); //Create new entry in BIS with incremented top index
+
             int branch_tag = get_BIS_top_idx();
             cpu->decode.branch_tag = branch_tag;
 
@@ -776,22 +792,26 @@ void dispatch(APEX_CPU *cpu)
             // adding instruction to rob
             add_instr_to_ROB(cpu, 0);
 
-            //Add ROB tail pointer to newly created BIS entry
-            bis->bis_entry[branch_tag].rob_entry = rob->tail;
+            if (strcmp(cpu->decode.opcode_str, "BZ") == 0 || strcmp(cpu->decode.opcode_str, "BNZ") == 0)
+            {
+                //Add ROB tail pointer to newly created BIS entry
+                bis->bis_entry[branch_tag].rob_entry = rob->tail;
+                // checkpoint rat and urf and provide the index
+                int rat_checkpoint_idx = insertCheckpointRat();
+                int urf_checkpoint_idx = insertCheckpointURF();
+
+                if (rat_checkpoint_idx != -1 && urf_checkpoint_idx != -1)
+                {
+                    bis->bis_entry[branch_tag].checkpoint_rat_idx = rat_checkpoint_idx;
+                    bis->bis_entry[branch_tag].checkpoint_urf_idx = urf_checkpoint_idx;
+                }
+            }
 
             ///Now Checkpoint the RAT and URF table and update the BIS entry to point new created checkpoint tables
             ///Siddhesh is working on it now
-            if(strcmp(cpu->decode.opcode_str, "JUMP") == 0 || strcmp(cpu->decode.opcode_str, "JAL") == 0)
+            if (strcmp(cpu->decode.opcode_str, "JUMP") == 0 || strcmp(cpu->decode.opcode_str, "JAL") == 0)
                 cpu->stoppedDispatch = 1;
 
-            // checkpoint rat and urf and provide the index
-            int rat_checkpoint_idx = insertCheckpointRat();
-            int urf_checkpoint_idx = insertCheckpointURF();
-
-            if(rat_checkpoint_idx != -1 && urf_checkpoint_idx != -1){
-                bis->bis_entry[branch_tag].checkpoint_rat_idx = rat_checkpoint_idx;
-                bis->bis_entry[branch_tag].checkpoint_urf_idx = urf_checkpoint_idx;
-            }
             cpu->decode.has_insn = FALSE;
         }
     }
@@ -1047,41 +1067,74 @@ void renameRegister(APEX_CPU *cpu)
     }
 }
 
-void flushAllFU(APEX_CPU *cpu){
-    cpu->ex_int_fu.has_insn = 0;
-    cpu->ex_mul_fu.has_insn = 0;
-    cpu->mul_cycles = 0;
+void flushAllFU(APEX_CPU *cpu, int branch_tag)
+{
+    if (cpu->ex_int_fu.branch_tag == branch_tag)
+        cpu->ex_int_fu.has_insn = 0;
+    if (cpu->ex_mul_fu.branch_tag == branch_tag)
+    {
+        cpu->ex_mul_fu.has_insn = 0;
+        cpu->mul_cycles = 0;
+    }
 }
-void flushDecode(APEX_CPU *cpu){
+void flushDecode(APEX_CPU *cpu)
+{
     cpu->decode.has_insn = FALSE;
 }
-void flushFetch(APEX_CPU *cpu, int pc){
+void flushFetch(APEX_CPU *cpu, int target_addr)
+{
 
-     cpu->pc = pc;
+    cpu->pc = target_addr;
 
     cpu->fetch_from_next_cycle = TRUE;
-    
+
     /*Enable fetch stage to start fetching from new PC*/
     cpu->fetch.has_insn = TRUE;
-
 }
 
-void flushIq(int branch_tag){
+void flushIQ(int branch_tag)
+{
     deleteAllNodes(branch_tag);
 }
 
-void flush(int pc,int branch_tag, int target_addr, APEX_CPU *cpu)
+void flush(int pc, int branch_tag, int target_addr, APEX_CPU *cpu)
 {
+    if (mispredicted_data.mispredicted_branch_tag != -1 &&
+        mispredicted_data.mispredicted_instrc_pc != -1 &&
+        mispredicted_data.target_addr != -1)
+    {
+        if (BIS_is_empty())
+            return;
 
-    flushAllFU(cpu);
-    flushDecode(cpu);
-    flushFetch(cpu,pc);
-    flushIq(branch_tag);
+        while (bis->bis_entry[bis->top].bis_tag != branch_tag)
+        {
+            //Only if BIS top not equal to passed branch_tag
+            BIS_entry entry = BIS_squash();
+            flushAllFU(cpu, entry.bis_tag);
+            flushIQ(entry.bis_tag);
+            //Free stored checkpointed RAT and URF table
+            replaceCheckPointedRAT(entry.checkpoint_rat_idx);
+            replaceCheckPointedURF(entry.checkpoint_urf_idx);
+        }
+
+        if (bis->bis_entry[bis->top].bis_tag == branch_tag)
+        {
+            flushAllFU(cpu, branch_tag);
+            flushIQ(branch_tag);
+        }
+
+        ROB_squash_after_misprediction(bis->bis_entry[bis->top].rob_entry);
+        //Restore RAT and URF table from BIS top entry
+        replaceCheckPointedRAT(bis->bis_entry[bis->top].checkpoint_rat_idx);
+        replaceCheckPointedURF(bis->bis_entry[bis->top].checkpoint_urf_idx);
+
+        flushDecode(cpu);
+        flushFetch(cpu, target_addr);
+        mispredicted_data.mispredicted_branch_tag = -1;
+        mispredicted_data.mispredicted_instrc_pc = -1;
+        mispredicted_data.target_addr = -1;
+    }
 }
-
-
-
-
 
 /*Utility functions end*/
 
@@ -1574,10 +1627,17 @@ APEX_jbu1(APEX_CPU *cpu)
             if ((btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 0 && cpu->zero_flag == TRUE) ||
                 (btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 1 && cpu->zero_flag == FALSE))
             {
+
+                if(btb->btb_entry[btb_entry_idx].branch_direction == 0)
+                    mispredicted_data.target_addr = btb->btb_entry[btb_entry_idx].target_addrs;
+                else if(btb->btb_entry[btb_entry_idx].branch_direction == 1)
+                    mispredicted_data.target_addr = cpu->jbu1.pc + 4;
+
                 //Mispredicted branch
                 //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
                 //bring new instruction with new target address
-                flush(cpu->jbu1.pc,cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs,cpu);
+                mispredicted_data.mispredicted_instrc_pc = cpu->jbu1.pc;
+                mispredicted_data.mispredicted_branch_tag = cpu->jbu1.branch_tag;
 
                 //For future prediction
                 if (cpu->zero_flag == TRUE)
@@ -1591,9 +1651,10 @@ APEX_jbu1(APEX_CPU *cpu)
             }
             //Prediction was correct -- Go with usual flow
             /*Shweta ::: Open for dispatching*/
-            update_ROB(cpu->jbu1);
+            // update_ROB(cpu->jbu1);
             //No need to unstalled decode or fetch stage as we didn't stop dispatch
-            cpu->insn_completed++;
+            // cpu->insn_completed++;
+            cpu->jbu2 = cpu->jbu1;
             cpu->jbu1.has_insn = FALSE;
             break;
         }
@@ -1606,10 +1667,17 @@ APEX_jbu1(APEX_CPU *cpu)
             if ((btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 0 && cpu->zero_flag == FALSE) ||
                 (btb_entry_idx != -1 && btb->btb_entry[btb_entry_idx].branch_direction == 1 && cpu->zero_flag == TRUE))
             {
+                if(btb->btb_entry[btb_entry_idx].branch_direction == 0)
+                    mispredicted_data.target_addr = btb->btb_entry[btb_entry_idx].target_addrs;
+                else if(btb->btb_entry[btb_entry_idx].branch_direction == 1)
+                    mispredicted_data.target_addr = cpu->jbu1.pc + 4;
+
                 //Mispredicted branch
                 //Broadcase this branch instruction tag and Flush unwanted instruction from everywhere and
                 //bring new instruction with new target address
-                flush(cpu->jbu1.pc,cpu->jbu1.branch_tag, btb->btb_entry[btb_entry_idx].target_addrs,cpu);
+                mispredicted_data.mispredicted_instrc_pc = cpu->jbu1.pc;
+                mispredicted_data.mispredicted_branch_tag = cpu->jbu1.branch_tag;
+
                 //For future prediction
                 if (cpu->zero_flag == FALSE)
                 {
@@ -1622,9 +1690,10 @@ APEX_jbu1(APEX_CPU *cpu)
             }
             //Prediction was correct -- Go with usual flow
             /*Shweta ::: Open for dispatching*/
-            update_ROB(cpu->jbu1);
+            // update_ROB(cpu->jbu1);
             //No need to unstalled decode or fetch stage as we didn't stop dispatch
-            cpu->insn_completed++;
+            // cpu->insn_completed++;
+            cpu->jbu2 = cpu->jbu1;
             cpu->jbu1.has_insn = FALSE;
             break;
         }
@@ -1671,7 +1740,17 @@ APEX_jbu2(APEX_CPU *cpu)
             /*Enable fetch stage to start fetching from new PC*/
             cpu->fetch.has_insn = TRUE;
 
-            update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+            // update_ROB(cpu->jbu2); //Shweta ::: Instead of passing it to memory update ROB entry
+
+            /*Shweta ::: Open for dispatching*/
+            if (cpu->stoppedDispatch)
+            {
+                cpu->stoppedDispatch = 0;
+                cpu->decode.stalled = 0;
+                //Shweta ::: added below two lines Try - remove if doesn't work
+                cpu->fetch.stalled = 0;
+            }
+
             break;
         }
 
@@ -1699,16 +1778,23 @@ APEX_jbu2(APEX_CPU *cpu)
 
             /* Make sure fetch stage is enabled to start fetching from new PC */
             cpu->fetch.has_insn = TRUE;
-        }
-        }
 
-        /*Shweta ::: Open for dispatching*/
-        if (cpu->stoppedDispatch)
+            /*Shweta ::: Open for dispatching*/
+            if (cpu->stoppedDispatch)
+            {
+                cpu->stoppedDispatch = 0;
+                cpu->decode.stalled = 0;
+                //Shweta ::: added below two lines Try - remove if doesn't work
+                cpu->fetch.stalled = 0;
+            }
+        }
+        case OPCODE_BZ:
+        case OPCODE_BNZ:
         {
-            cpu->stoppedDispatch = 0;
-            cpu->decode.stalled = 0;
-            //Shweta ::: added below two lines Try - remove if doesn't work
-            cpu->fetch.stalled = 0;
+            //No Specific action needed
+            //Just update ROB
+            break;
+        }
         }
 
         update_ROB(cpu->jbu2);
@@ -1847,8 +1933,8 @@ APEX_memory2(APEX_CPU *cpu)
         {
             /*Store data from destination register to data memory */
             cpu->data_memory[cpu->mem2.memory_address] = cpu->mem2.rs1_value;
-			print_memory_address[index_mem_add] = cpu->mem2.memory_address;
-            index_mem_add++;								
+            print_memory_address[index_mem_add] = cpu->mem2.memory_address;
+            index_mem_add++;
             break;
         }
         }
@@ -1954,11 +2040,12 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
 
     // init checkpoint rat
     initializeCheckPointRat();
-	
-	//Init memory stack
-    index_mem_add=0;
-    for(int i=0;i<50;i++){
-        print_memory_address[i]=-1;
+
+    //Init memory stack
+    index_mem_add = 0;
+    for (int i = 0; i < 50; i++)
+    {
+        print_memory_address[i] = -1;
     }
 
     // init checpoint urf
@@ -1973,6 +2060,11 @@ APEX_cpu_init(const char *filename, const char *operation, const int cycles)
 
     //Initialize BTB
     createBTB();
+
+    //Initialize mispredictedData
+    mispredicted_data.mispredicted_branch_tag = -1;
+    mispredicted_data.mispredicted_instrc_pc = -1;
+    mispredicted_data.target_addr = -1;
 
     if (ENABLE_DEBUG_MESSAGES && !cpu->simulate)
     {
@@ -2015,7 +2107,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
             printf("Clock Cycle #: %d\n", cpu->clock);
             printf("--------------------------------------------\n");
         }
-		if(!cpu->simulate)
+        if (!cpu->simulate)
             printf("Program Counter #: %d\n", cpu->pc);
 
         /*Shweta : Stop execution if enconter HALT instruction 
@@ -2051,13 +2143,26 @@ void APEX_cpu_run(APEX_CPU *cpu)
             else if (
                 !ROB_is_empty() &&
                 (strcmp(rob->head->entry.opcode_str, "CMP") == 0 ||
-                 strcmp(rob->head->entry.opcode_str, "BZ") == 0 ||
-                 strcmp(rob->head->entry.opcode_str, "BNZ") == 0 ||
                  strcmp(rob->head->entry.opcode_str, "JUMP") == 0))
             {
+                ROB_pop(); ///Pop only if status bit is 1
+            }
+            else if (!ROB_is_empty() &&
+                     (strcmp(rob->head->entry.opcode_str, "BZ") == 0 ||
+                      strcmp(rob->head->entry.opcode_str, "BNZ") == 0))
+            {
+
                 ROB_entry entry = ROB_pop(); ///Pop only if status bit is 1
-                if(entry.status != -1)
-                    BIS_pop();
+                if (entry.status != -1)
+                {
+                    if (!BIS_is_empty())
+                    {
+                        BIS_entry entry = peekBottom();
+                        BIS_pop();
+                        // Free checkpointed urf and rat at time of commitment of branch ins
+                        freeChkURFRAT(entry.checkpoint_rat_idx, entry.checkpoint_urf_idx);
+                    }
+                }
             }
             else if (!ROB_is_empty() && strcmp(rob->head->entry.opcode_str, "HALT") == 0 && !cpu->mem1.has_insn && !cpu->mem2.has_insn)
             {
@@ -2074,18 +2179,29 @@ void APEX_cpu_run(APEX_CPU *cpu)
         // this is one cycle for memory computation
         APEX_memory1(cpu);
 
+        if (!cpu->simulate)
+        {
+            printBTB();
+        }
+
         //all ex stage this all in one cycle
         APEX_jbu2(cpu);
         APEX_jbu1(cpu);
+
+        //Flush instruction if branch mispredicted
+        flush(mispredicted_data.mispredicted_instrc_pc, mispredicted_data.mispredicted_branch_tag, mispredicted_data.target_addr, cpu);
+
         APEX_int_fu(cpu);
         APEX_mul_fu(cpu);
 
         /*Shweta ::: Print Issue/ROB/RAT/RRAT entries*/
-        if(!cpu->simulate){
+        if (!cpu->simulate)
+        {
+
             printQueue();
             printROB();
         }
-		
+
         issueInstruction(cpu);
         // APEX_dispatch(cpu); //However this is not a stage; If your instruction is coming for dispatch it will surely go to IQ and ROB
         // decode stage
@@ -2094,7 +2210,7 @@ void APEX_cpu_run(APEX_CPU *cpu)
         // fetch stage
         APEX_fetch(cpu);
         // print_reg_file(cpu);
-
+        // printAll(cpu);
         if (cpu->single_step)
         {
             printf("Press any key to advance CPU Clock or <q> to quit:\n");
@@ -2115,8 +2231,8 @@ void printAll(APEX_CPU *cpu)
 {
     // printMemory(cpu);
     printURF();
-    //printRAT();
-    //printRRAT();
+    printRAT();
+    printRRAT();
     printArchToPhys();
     printMemoryAddress(cpu);
 }

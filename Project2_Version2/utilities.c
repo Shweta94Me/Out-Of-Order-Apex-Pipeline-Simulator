@@ -106,51 +106,40 @@ int insertCheckpointURF(){
 }
 
 // get checkpointed Rat based on index provided earlier during insert
-Return_RAT getCheckPointedRAT(int index){
+void replaceCheckPointedRAT(int index){
 
-    Return_RAT chkptrat;
-    chkptrat.valid = 0;
+    
     if(index >= 0 && index < CheckPointMaxSize){
         for (int i = 0; i < CheckPointMaxSize; i++)
         {
             if(i == index){
-                chkptrat.valid =1;
-                for (int i = 0; i < RATMaxSize; i++)
-                {
-                    chkptrat.checkpointrat[i].phy_reg_num = checkpointRat[i].entry.Rat->phy_reg_num;
-                }
+                memcpy(rat, checkpointRat[i].entry.Rat, sizeof(rat));
+
                 checkpointRat[i].entry.ratFree = 1; //freeing up the rat entry
-                return chkptrat;
             }
         }
     
     }
-    return chkptrat;
 }
 
 // get checkpointed URF based on index provided earlier during insert
-Return_URF getCheckPointedURF(int index){
-    Return_URF check_point_urf;
-    check_point_urf.valid = 0;
+void replaceCheckPointedURF(int index){
     if(index >= 0 && index < CheckPointMaxSize){
 
         for (int i = 0; i < CheckPointMaxSize; i++)
         {
             if(i == index){
-                check_point_urf.valid = 1;
-                for (int i = 0; i < URFMaxSize; i++)
-                {
-                    check_point_urf.checkpointurf[i].free = checkpointUrf[i].entry.Urf->free;
-                    check_point_urf.checkpointurf[i].status = checkpointUrf[i].entry.Urf->status;
-                    check_point_urf.checkpointurf[i].value = checkpointUrf[i].entry.Urf->value;
-
-                }
+                memcpy(urf, checkpointUrf[i].entry.Urf, sizeof(urf));
                 checkpointUrf[i].entry.urfFree = 1; //freeing up the urf entry
-                return check_point_urf;
             }
         }
     }
-    return check_point_urf;
+}
+
+// free the checkpoint rat and urf at the time of commitment
+void freeChkURFRAT(int rat_index, int urf_index){
+    checkpointRat[rat_index].entry.ratFree = 1;
+    checkpointUrf[urf_index].entry.urfFree = 1;
 }
 
 //Check if URF has a free entry and return that free entry index

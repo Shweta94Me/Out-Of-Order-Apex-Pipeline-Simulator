@@ -107,4 +107,7 @@ void printArchToPhys();
 void jal_push(StackNode** root, JALStackEntry data);
 int jal_pop(StackNode** root);
 int jal_peek(StackNode* root);
+void replaceCheckPointedRAT(int index);
+void replaceCheckPointedURF(int index);
+void freeChkURFRAT(int rat_index, int urf_index);
 #endif
